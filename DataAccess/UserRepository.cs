@@ -25,7 +25,7 @@ namespace DataAccess
 			try
 			{
 				string passwordHash = securityService.GetSha256Hash(password);
-				return await mongoDbContext.Users.Find(s => s.UserName == username && s.Password == password).SingleOrDefaultAsync();
+				return await mongoDbContext.Users.Find(s => s.UserName == username && s.Password == passwordHash).SingleOrDefaultAsync();
 			}
 			catch (Exception ex)
 			{
@@ -183,6 +183,23 @@ namespace DataAccess
 			{
 				throw ex;
 			}
+		}
+
+		public async Task<bool> ChangePassword(string userId, string newPasswordHash, string newSerialNumber)
+		{
+			UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Set(i => i.Password, newPasswordHash).Set(x => x.SerialNumber, newSerialNumber);
+
+			try
+			{
+				await mongoDbContext.Users.UpdateOneAsync(i => i.Id == userId, update);
+				return true;
+			}
+			catch (Exception ex)
+			{
+
+				throw ex;
+			}
+
 		}
 	}
 }

@@ -77,6 +77,7 @@ namespace IoCConfig
 			services.AddScoped<IUserService, UserService>();
 			services.AddSingleton<ISecurityService, SecurityService>();
 			services.AddScoped<IUserRepository, UserRepository>();
+			services.AddHttpContextAccessor();
 		}
 
 		public static void AddCustomOptions(this IServiceCollection services, IConfiguration configuration)

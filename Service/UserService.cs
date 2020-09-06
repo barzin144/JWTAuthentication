@@ -2,9 +2,11 @@
 using Domain.Entities;
 using Domain.Repositories;
 using Domain.Services;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace Service
@@ -12,10 +14,14 @@ namespace Service
 	public class UserService : IUserService
 	{
 		private readonly IUserRepository userRepository;
+		private readonly IHttpContextAccessor contextAccessor;
+		private readonly ISecurityService securityService;
 
-		public UserService(IUserRepository userRepository)
+		public UserService(IUserRepository userRepository, IHttpContextAccessor contextAccessor, ISecurityService securityService)
 		{
 			this.userRepository = userRepository;
+			this.contextAccessor = contextAccessor;
+			this.securityService = securityService;
 		}
 		public async Task<bool> AddUserAsync(User user)
 		{
@@ -70,6 +76,21 @@ namespace Service
 		public async Task<User> FindUserByUsernameAsync(string username)
 		{
 			return await userRepository.FindUserByUsernameAsync(username);
+		}
+		public async Task<User> GetCurrentUserDataAsync()
+		{
+			ClaimsIdentity claimsIdentity = contextAccessor.HttpContext.User.Identity as ClaimsIdentity;
+
+			string userId = claimsIdentity?.FindFirst(ClaimTypes.UserData).Value;
+			return await FindUserByIdAsync(userId);
+		}
+
+		public async Task<bool> ChangePassword(string userId, string newPassword)
+		{
+			string newPasswordHash = securityService.GetSha256Hash(newPassword);
+			string newSerialNumber = securityService.CreateCryptographicallySecureGuid().ToString();
+
+			return await userRepository.ChangePassword(userId, newPasswordHash, newSerialNumber);
 		}
 	}
 }

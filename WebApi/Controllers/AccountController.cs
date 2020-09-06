@@ -30,9 +30,9 @@ namespace WebApi.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Login(LoginUserViewModel loginUser)
 		{
-			if (loginUser == null)
+			if (!ModelState.IsValid)
 			{
-				return BadRequest("User is null.");
+				return BadRequest(ModelState);
 			}
 
 			User user = await userService.FindUserByUsernameAndPasswordAsync(loginUser.UserName, loginUser.Password);
@@ -56,9 +56,9 @@ namespace WebApi.Controllers
 		[HttpPost]
 		public async Task<IActionResult> Register(RegisteUserViewModel newUser)
 		{
-			if (string.IsNullOrWhiteSpace(newUser.DisplayName) || string.IsNullOrWhiteSpace(newUser.UserName) || string.IsNullOrWhiteSpace(newUser.Password))
+			if (!ModelState.IsValid)
 			{
-				return BadRequest("User is null.");
+				return BadRequest(ModelState);
 			}
 			if (userService.FindUserByUsernameAsync(newUser.UserName).Result == null)
 			{
@@ -84,6 +84,30 @@ namespace WebApi.Controllers
 			{
 				return BadRequest("User with this username has exsit.");
 			}
+		}
+		[Authorize]
+		[HttpPost]
+		public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			User user = await userService.GetCurrentUserDataAsync();
+
+			if (user.Password != securityService.GetSha256Hash(model.OldPassword))
+			{
+				return BadRequest("Old password is wrong.");
+			}
+
+			if (await userService.ChangePassword(user.Id, model.NewPassword))
+			{
+				return Ok(new { message = "password changed successfully."});
+			}
+
+			return BadRequest("change password failed.");
+
 		}
 
 		[HttpPost]

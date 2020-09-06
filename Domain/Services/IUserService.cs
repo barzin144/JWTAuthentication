@@ -16,5 +16,7 @@ namespace Domain.Services
 		Task<bool> DeleteExpiredTokensAsync(string userId);
 		Task<bool> DeleteTokensWithSameRefreshTokenSourceAsync(string refreshTokenIdHashSource, string userId);
 		Task<(Token token, User user)> FindUserAndTokenByRefreshTokenAsync(string refreshToken);
+		Task<User> GetCurrentUserDataAsync();
+		Task<bool> ChangePassword(string userId, string newPassword);
 	}
 }
