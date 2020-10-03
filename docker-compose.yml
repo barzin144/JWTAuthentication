@@ -4,12 +4,17 @@ services:
                 build: .
                 ports:
                    - 5000:80
+                environment:
+                    ConnectionStrings__MongoDb: "mongodb://root:Mongo_DB_Secret_Password@mongo:27017"
                 networks:
                    - jwtNetwork
                 depends_on:
                    - "mongo"
         mongo:
                 image: mongo
+                environment:
+                    MONGO_INITDB_ROOT_USERNAME: root
+                    MONGO_INITDB_ROOT_PASSWORD: Mongo_DB_Secret_Password
                 networks:
                    - jwtNetwork
                 volumes:
