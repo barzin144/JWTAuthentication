@@ -10,7 +10,6 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    name: Deploy github pages
     runs-on: ubuntu-latest
     environment:
       name: github-pages
