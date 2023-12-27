@@ -1,10 +1,9 @@
 name: Stryker
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   workflow_call:
 jobs:
   stryker:
-    name: mutation testing
     runs-on: ubuntu-lastest
 
     steps:
