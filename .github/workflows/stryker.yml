@@ -3,11 +3,12 @@ on:
   workflow_dispatch: {}
   workflow_call:
 jobs:
-  stryker:
+  mutation:
     runs-on: ubuntu-lastest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
     
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v3
@@ -19,6 +20,7 @@ jobs:
           export PATH="$PATH:$HOME/.dotnet/tools"
           dotnet tool install -g dotnet-stryker
           dotnet stryker -O ./reports
+    
     - name: Upload report
       uses: actions/upload-artifact@v3
       with:
@@ -26,8 +28,7 @@ jobs:
         path: ${{ github.workspace }}/reports
         
   deploy-report:
-    name: Deploy github pages
-    needs: stryker
+    needs: mutation
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}.
     uses: ./.github/workflows/gh-pages.yml
     secrets: inherit
