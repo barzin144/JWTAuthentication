@@ -1,4 +1,4 @@
-name: Stryker
+name: stryker
 on:
   workflow_dispatch: {}
   workflow_call:
