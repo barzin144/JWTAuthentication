@@ -1,7 +1,7 @@
 name: Stryker
 on:
   workflow_dispatch: {}
-  push:
+  workflow_call: {}
 jobs:
   stryker:
     name: mutation testing
