@@ -26,9 +26,9 @@ namespace DataAccess
 				await collection.InsertOneAsync(entity);
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1.402-alpine3.12 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
 WORKDIR /src
 
 COPY ["DataAccess/DataAccess.csproj", "DataAccess/"]
@@ -17,7 +17,7 @@ RUN dotnet build "WebApi.csproj" -c Release -o /app
 
 RUN dotnet publish "WebApi.csproj" -c Release -o /app
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1.8-alpine3.12
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 
 WORKDIR "/app"
 

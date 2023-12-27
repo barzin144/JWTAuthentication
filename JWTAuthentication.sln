@@ -1,17 +1,17 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApi", "WebApi\WebApi.csproj", "{01732BB2-EA39-4669-B182-51019A7FF153}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WebApi", "WebApi\WebApi.csproj", "{01732BB2-EA39-4669-B182-51019A7FF153}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Domain", "Domain\Domain.csproj", "{F2A6F369-F6FA-4A10-AE8E-0CC871E5DC19}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Domain", "Domain\Domain.csproj", "{F2A6F369-F6FA-4A10-AE8E-0CC871E5DC19}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataAccess", "DataAccess\DataAccess.csproj", "{5477CAA7-DE56-4840-A7D8-8C311CC81A90}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccess", "DataAccess\DataAccess.csproj", "{5477CAA7-DE56-4840-A7D8-8C311CC81A90}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.csproj", "{DB47A547-4495-481F-9BF5-AE5B1530970A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Service", "Service\Service.csproj", "{DB47A547-4495-481F-9BF5-AE5B1530970A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoCConfig", "IoCConfig\IoCConfig.csproj", "{C8A3245A-4547-4738-AC3A-F288E54A1BB8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IoCConfig", "IoCConfig\IoCConfig.csproj", "{C8A3245A-4547-4738-AC3A-F288E54A1BB8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

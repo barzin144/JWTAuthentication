@@ -27,9 +27,9 @@ namespace DataAccess
 				string passwordHash = securityService.GetSha256Hash(password);
 				return await mongoDbContext.Users.Find(s => s.UserName == username && s.Password == passwordHash).SingleOrDefaultAsync();
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -44,9 +44,9 @@ namespace DataAccess
 
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -61,9 +61,9 @@ namespace DataAccess
 
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -77,9 +77,9 @@ namespace DataAccess
 
 				return user.Tokens.Where(x => x.AccessTokenHash == accessTokenHash).FirstOrDefault();
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -104,10 +104,10 @@ namespace DataAccess
 				await mongoDbContext.Users.UpdateOneAsync(filter, update);
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
 
-				throw ex;
+				throw;
 			}
 		}
 
@@ -123,9 +123,9 @@ namespace DataAccess
 
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -146,9 +146,9 @@ namespace DataAccess
 
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -166,9 +166,9 @@ namespace DataAccess
 				}
 				return (user.Tokens.Where(x => x.RefreshTokenIdHash == refreshTokenHash).FirstOrDefault(), user);
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -179,9 +179,9 @@ namespace DataAccess
 				var s = await mongoDbContext.Users.Find(s => s.UserName == username).SingleOrDefaultAsync();
 				return s;
 			}
-			catch (Exception ex)
+			catch
 			{
-				throw ex;
+				throw;
 			}
 		}
 
@@ -194,10 +194,10 @@ namespace DataAccess
 				await mongoDbContext.Users.UpdateOneAsync(i => i.Id == userId, update);
 				return true;
 			}
-			catch (Exception ex)
+			catch
 			{
 
-				throw ex;
+				throw;
 			}
 
 		}
