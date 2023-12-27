@@ -25,6 +25,5 @@ jobs:
   mutation-testing:
     name: Run mutation test
     needs: build
-    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}.
     uses: ./.github/workflows/stryker.yml
     secrets: inherit
