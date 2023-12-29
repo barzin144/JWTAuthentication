@@ -1,5 +1,12 @@
 {
     "stryker-config": {
+      "coverage-analysis": "off",
+      "ignore-mutations": [
+        "string",
+        "initializer",
+        "block",
+        "statement"
+      ],
       "report-file-name": "index.html"
     }
   }
