@@ -1,0 +1,45 @@
+name: Test
+on:
+  workflow_dispatch: {}
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test-backend:
+    name: Unit test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build--no-restore --configuration Release
+
+      - name: Test
+        run: |
+          git config --global --add safe.directory '*'
+          dotnet test --no-restore --logger "trx;LogFileName=test-results.trx" || true
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        with:
+          name: Test Results
+          path: "**/test-results.trx"
+          reporter: dotnet-trx
+          fail-on-error: true
+
+  stryker:
+    needs: test-backend
+    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+    uses: ./.github/workflows/stryker.yml
+    secrets: inherit
