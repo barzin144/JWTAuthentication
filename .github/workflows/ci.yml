@@ -29,3 +29,9 @@ jobs:
     if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}.
     uses: ./.github/workflows/stryker.yml
     secrets: inherit
+
+  testing:
+    needs: build
+    if: ${{ always() && contains(join(needs.*.result, ','), 'success') }}.
+    uses: ./.github/workflows/unit-test.yml
+    secrets: inherit

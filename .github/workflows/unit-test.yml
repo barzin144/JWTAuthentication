@@ -1,8 +1,7 @@
 name: Test
 on:
   workflow_dispatch: {}
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_call:
 
 jobs:
   test-backend:
@@ -37,9 +36,3 @@ jobs:
           path: "**/test-results.trx"
           reporter: dotnet-trx
           fail-on-error: true
-
-  stryker:
-    needs: test-backend
-    if: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
-    uses: ./.github/workflows/stryker.yml
-    secrets: inherit
