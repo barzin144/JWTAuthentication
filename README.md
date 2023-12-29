@@ -1,2 +1,7 @@
-# JWT Authentication
-Using JWT for authentication and authorization in dotNet Core 3.1 and using MongoDB for store users data and tokens
+# JWT Authentication Service
+This service uses JWT to authenticate users and uses MongoDB for storing users and roles.
+
+## Usage
+```
+docker compose up
+```
