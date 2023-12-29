@@ -8,13 +8,13 @@ namespace DataAccess
 {
 	public class BaseRepository<T> : IBaseRepository<T> where T : BaseEntity
 	{
-		private IMongoCollection<T> collection = null;
-		public BaseRepository(MongoDbContext mongoDbContext)
+		protected IMongoCollection<T> collection = null;
+		public BaseRepository(IMongoDbContext mongoDbContext)
 		{
 			collection = mongoDbContext.GetCollection<T>($"{typeof(T).Name}s");
 		}
 
-		public async Task<T> FindById(string Id)
+		public async Task<T> FindByIdAsync(string Id)
 		{
 			return await collection.Find(x => x.Id == Id).SingleOrDefaultAsync();
 		}
