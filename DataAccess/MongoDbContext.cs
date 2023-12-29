@@ -1,12 +1,14 @@
 ﻿using Domain.Entities;
 using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace DataAccess
 {
-	public class MongoDbContext
+	public interface IMongoDbContext
+	{
+		IMongoCollection<T> GetCollection<T>(string name);
+	}
+	
+	public class MongoDbContext : IMongoDbContext
 	{
 		private readonly IMongoDatabase mongoDatabase;
 
@@ -15,7 +17,6 @@ namespace DataAccess
 			mongoDatabase = client.GetDatabase(dbName);
 		}
 
-		public IMongoCollection<User> Users => mongoDatabase.GetCollection<User>("Users");
 		public IMongoCollection<T> GetCollection<T>(string name)
 		{
 			return mongoDatabase.GetCollection<T>(name);

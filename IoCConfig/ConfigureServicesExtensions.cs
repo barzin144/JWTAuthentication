@@ -131,7 +131,7 @@ namespace IoCConfig
 		public static void AddCustomMongoDbService(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddSingleton<IMongoClient>(s => new MongoClient(configuration.GetConnectionString("MongoDb")));
-			services.AddScoped<MongoDbContext>(s => new MongoDbContext(s.GetRequiredService<IMongoClient>(), configuration["DbName"]));
+			services.AddScoped<IMongoDbContext>(s => new MongoDbContext(s.GetRequiredService<IMongoClient>(), configuration["DbName"]));
 		}
 	}
 }

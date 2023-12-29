@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service", "Service\Service.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IoCConfig", "IoCConfig\IoCConfig.csproj", "{C8A3245A-4547-4738-AC3A-F288E54A1BB8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Service.test", "Service.test\Service.test.csproj", "{A3D3B325-D116-4814-AA52-26D0FFC69A05}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{C8A3245A-4547-4738-AC3A-F288E54A1BB8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C8A3245A-4547-4738-AC3A-F288E54A1BB8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C8A3245A-4547-4738-AC3A-F288E54A1BB8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A3D3B325-D116-4814-AA52-26D0FFC69A05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A3D3B325-D116-4814-AA52-26D0FFC69A05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A3D3B325-D116-4814-AA52-26D0FFC69A05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A3D3B325-D116-4814-AA52-26D0FFC69A05}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,27 +5,25 @@ using MongoDB.Driver;
 using System;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace DataAccess
 {
 	public class UserRepository : BaseRepository<User>, IUserRepository
 	{
-		private readonly MongoDbContext mongoDbContext;
 		private readonly ISecurityService securityService;
 
-		public UserRepository(MongoDbContext mongoDbContext, ISecurityService securityService) : base(mongoDbContext)
+		public UserRepository(IMongoDbContext mongoDbContext, ISecurityService securityService) : base(mongoDbContext)
 		{
-			this.mongoDbContext = mongoDbContext;
 			this.securityService = securityService;
 		}
 
-		public async Task<User> FindUserByUsernameAndPasswordAsync(string username, string password)
+		public async Task<User> FindUserByUsernameAndPasswordAsync(Expression<Func<User,bool>> filter)
 		{
 			try
 			{
-				string passwordHash = securityService.GetSha256Hash(password);
-				return await mongoDbContext.Users.Find(s => s.UserName == username && s.Password == passwordHash).SingleOrDefaultAsync();
+				return await collection.Find(filter).SingleOrDefaultAsync();
 			}
 			catch (Exception ex)
 			{
@@ -40,7 +38,7 @@ namespace DataAccess
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq(x => x.Id, userId);
 				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Unset(x => x.Tokens);
 
-				await mongoDbContext.Users.FindOneAndUpdateAsync(filter, update);
+				await collection.FindOneAndUpdateAsync(filter, update);
 
 				return true;
 			}
@@ -57,7 +55,7 @@ namespace DataAccess
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq(x => x.Id, userId);
 				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().AddToSet(x => x.Tokens, token);
 
-				await mongoDbContext.Users.UpdateOneAsync(filter, update);
+				await collection.UpdateOneAsync(filter, update);
 
 				return true;
 			}
@@ -73,7 +71,7 @@ namespace DataAccess
 			{
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq($"{nameof(User.Tokens)}.{nameof(Token.AccessTokenHash)}", accessTokenHash);
 
-				User user = await mongoDbContext.Users.Find(filter).FirstOrDefaultAsync();
+				User user = await collection.Find(filter).FirstOrDefaultAsync();
 
 				return user.Tokens.Where(x => x.AccessTokenHash == accessTokenHash).FirstOrDefault();
 			}
@@ -101,7 +99,7 @@ namespace DataAccess
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq(x => x.Id, user.Id);
 				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Set(x => x.LastLoggedIn, currentUtc);
 
-				await mongoDbContext.Users.UpdateOneAsync(filter, update);
+				await collection.UpdateOneAsync(filter, update);
 				return true;
 			}
 			catch (Exception ex)
@@ -119,7 +117,7 @@ namespace DataAccess
 
 				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().PullFilter(x => x.Tokens, i => i.RefreshTokenExpiresDateTime < DateTimeOffset.UtcNow);
 
-				await mongoDbContext.Users.UpdateManyAsync(filter, update);
+				await collection.UpdateManyAsync(filter, update);
 
 				return true;
 			}
@@ -142,7 +140,7 @@ namespace DataAccess
 
 				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().PullFilter(x => x.Tokens, i => i.RefreshTokenIdHashSource == refreshTokenIdHashSource || (i.RefreshTokenIdHash == refreshTokenIdHashSource && i.RefreshTokenIdHashSource == null));
 
-				await mongoDbContext.Users.UpdateManyAsync(filter, update);
+				await collection.UpdateManyAsync(filter, update);
 
 				return true;
 			}
@@ -159,7 +157,7 @@ namespace DataAccess
 				string refreshTokenHash = securityService.GetSha256Hash(refreshToken);
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq($"{nameof(User.Tokens)}.{nameof(Token.RefreshTokenIdHash)}", refreshTokenHash);
 
-				User user = await mongoDbContext.Users.Find(filter).FirstOrDefaultAsync();
+				User user = await collection.Find(filter).FirstOrDefaultAsync();
 				if (user == null)
 				{
 					throw new Exception("Invalid refresh token");
@@ -176,7 +174,7 @@ namespace DataAccess
 		{
 			try
 			{
-				var s = await mongoDbContext.Users.Find(s => s.UserName == username).SingleOrDefaultAsync();
+				var s = await collection.Find(s => s.UserName == username).SingleOrDefaultAsync();
 				return s;
 			}
 			catch (Exception ex)
@@ -191,7 +189,7 @@ namespace DataAccess
 
 			try
 			{
-				await mongoDbContext.Users.UpdateOneAsync(i => i.Id == userId, update);
+				await collection.UpdateOneAsync(i => i.Id == userId, update);
 				return true;
 			}
 			catch (Exception ex)

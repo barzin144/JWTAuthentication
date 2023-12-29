@@ -1,11 +1,13 @@
 ﻿using Domain.Entities;
+using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace Domain.Repositories
 {
 	public interface IUserRepository: IBaseRepository<User>
 	{
-		Task<User> FindUserByUsernameAndPasswordAsync(string username, string password);
+		Task<User> FindUserByUsernameAndPasswordAsync(Expression<Func<User,bool>> filter);
 		Task<bool> DeleteUserTokensByUserIdAsync(string userId);
 		Task<bool> AddUserTokenByUserIdAsync(string userId, Token token);
 		Task<Token> FindTokenByUserIdAndAccessTokenAsync(string userId, string accessTokenHash);

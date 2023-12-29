@@ -30,12 +30,13 @@ namespace Service
 
 		public async Task<User> FindUserByUsernameAndPasswordAsync(string username, string password)
 		{
-			return await userRepository.FindUserByUsernameAndPasswordAsync(username, password);
+			string passwordHash = securityService.GetSha256Hash(password);
+			return await userRepository.FindUserByUsernameAndPasswordAsync(s => s.UserName == username && s.Password == passwordHash);
 		}
 
 		public async ValueTask<User> FindUserByIdAsync(string userId)
 		{
-			return await userRepository.FindById(userId);
+			return await userRepository.FindByIdAsync(userId);
 		}
 
 		public async Task UpdateUserLastActivityDateAsync(User user)
