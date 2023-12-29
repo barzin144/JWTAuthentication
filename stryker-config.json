@@ -1,6 +1,5 @@
 {
     "stryker-config": {
-      "coverage-analysis": "off",
       "report-file-name": "index.html"
     }
   }
