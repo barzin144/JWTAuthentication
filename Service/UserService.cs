@@ -78,6 +78,7 @@ namespace Service
 		{
 			return await userRepository.FindUserByUsernameAsync(username);
 		}
+		
 		public async Task<User> GetCurrentUserDataAsync()
 		{
 			ClaimsIdentity claimsIdentity = contextAccessor.HttpContext.User.Identity as ClaimsIdentity;
