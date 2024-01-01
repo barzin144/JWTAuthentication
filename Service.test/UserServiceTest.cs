@@ -1,4 +1,5 @@
 using Domain.Repositories;
+using System.Linq.Expressions;
 using Domain.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
@@ -31,6 +32,7 @@ public class UserServiceTest
         var result = await _userService.FindUserByUsernameAndPasswordAsync(username, password);
         //Assert
         _userRepository.Verify(x => x.FindUserByUsernameAndPasswordAsync(s => s.UserName == username && s.Password == passwordHash), Times.Once);
+        _userRepository.Verify(x => x.FindUserByUsernameAndPasswordAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once);
     }
 
     [Fact]
@@ -59,11 +61,15 @@ public class UserServiceTest
     public async void UpdateUserLastActivityDateAsync_ShouldCallUpdateUserLastActivityDateAsync()
     {
         //Arrange
-        User newUser = new User();
+        User newUser = new User() { UserName = "abc" };
+        User calledUser = new User();
+        _userRepository.Setup(x => x.UpdateUserLastActivityDateAsync(It.IsAny<User>()))
+            .Callback<User>(x => calledUser = x);
         //Act
         await _userService.UpdateUserLastActivityDateAsync(newUser);
         //Assert
-        _userRepository.Verify(x => x.UpdateUserLastActivityDateAsync(newUser), Times.Once);
+        _userRepository.Verify(x => x.UpdateUserLastActivityDateAsync(It.IsAny<User>()), Times.Once);
+        Assert.Equal(newUser.UserName, calledUser.UserName);
     }
 
     [Fact]
