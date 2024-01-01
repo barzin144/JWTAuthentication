@@ -1,6 +1,5 @@
 {
     "stryker-config": {
-      "coverage-analysis": "off",
       "ignore-mutations": [
         "string",
         "initializer",
