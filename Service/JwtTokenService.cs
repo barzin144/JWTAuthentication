@@ -95,7 +95,7 @@ namespace Service
 				context.Fail("This token is expired. Please login again.");
 			}
 
-			if (!(context.SecurityToken is JwtSecurityToken accessToken) || string.IsNullOrWhiteSpace(accessToken.RawData) || !await IsValidTokenAsync(accessToken.RawData, userId))
+			if (!(context.SecurityToken is Microsoft.IdentityModel.JsonWebTokens.JsonWebToken accessToken) || string.IsNullOrWhiteSpace(accessToken.EncodedToken) || !await IsValidTokenAsync(accessToken.EncodedToken, userId))
 			{
 				context.Fail("This token is not in out database");
 				return;
