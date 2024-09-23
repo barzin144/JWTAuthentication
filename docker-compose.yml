@@ -3,7 +3,7 @@ services:
         webapi:
                 build: .
                 ports:
-                   - 5000:80
+                   - 5000:8080
                 environment:
                     ConnectionStrings__MongoDb: "mongodb://root:Mongo_DB_Secret_Password@mongo:27017"
                 networks:
