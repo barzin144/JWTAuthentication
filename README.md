@@ -4,4 +4,6 @@ This service uses JWT to authenticate users and uses MongoDB for storing users a
 ## Usage
 ```
 docker compose up
+//Browse http://localhost:5000
 ```
+
