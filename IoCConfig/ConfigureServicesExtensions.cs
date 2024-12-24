@@ -1,5 +1,4 @@
-﻿using System;
-using Service;
+﻿using Service;
 using System.Text;
 using Domain.Models;
 using Domain.Services;
@@ -10,15 +9,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
 using DataAccess;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using MongoDB.Driver;
 using Domain.Repositories;
+using System;
 
 namespace IoCConfig
 {
-	public static class ConfigureServicesExtensions
+    public static class ConfigureServicesExtensions
 	{
-		public static void AddCustonCors(this IServiceCollection services)
+		public static void AddCustomCors(this IServiceCollection services)
 		{
 			services.AddCors(options =>
 			options.AddPolicy("CorsPolicy",
@@ -33,18 +32,12 @@ namespace IoCConfig
 
 		public static void AddCustomJwtBearer(this IServiceCollection services, IConfiguration configuration)
 		{
-			services.AddAuthorization(options =>
-			{
-				options.AddPolicy(CustomRoles.Admin, policy => policy.RequireRole(CustomRoles.Admin));
-				options.AddPolicy(CustomRoles.User, policy => policy.RequireRole(CustomRoles.User));
-			});
-
 			services.AddAuthentication(options =>
-		 {
-			 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-			 options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
-			 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-		 })
+			{
+				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
 			.AddJwtBearer(configureOptions =>
 			{
 				configureOptions.RequireHttpsMetadata = false;
@@ -57,16 +50,7 @@ namespace IoCConfig
 					ValidateAudience = true,
 					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
 					ValidateIssuerSigningKey = true,
-					ValidateLifetime = true,
-					ClockSkew = TimeSpan.Zero
-				};
-				configureOptions.Events = new JwtBearerEvents
-				{
-					OnTokenValidated = context =>
-					{
-						IJwtTokenService jwtTokenService = context.HttpContext.RequestServices.GetRequiredService<IJwtTokenService>();
-						return jwtTokenService.ValidateAsync(context);
-					}
+					ValidateLifetime = true
 				};
 			});
 		}
@@ -99,8 +83,8 @@ namespace IoCConfig
 				options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 				{
 					Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-                      Enter 'Bearer' [space] and then your token in the text input below.
-                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+						Enter 'Bearer' [space] and then your token in the text input below.
+						\r\n\r\nExample: 'Bearer 12345abcdef'",
 					Name = "Authorization",
 					In = ParameterLocation.Header,
 					Type = SecuritySchemeType.ApiKey,

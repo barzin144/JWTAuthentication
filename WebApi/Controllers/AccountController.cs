@@ -54,7 +54,7 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost]
-		public async Task<IActionResult> Register(RegisteUserViewModel newUser)
+		public async Task<IActionResult> Register(RegisterUserViewModel newUser)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -82,7 +82,7 @@ namespace WebApi.Controllers
 			}
 			else
 			{
-				return BadRequest("User with this username has exsit.");
+				return BadRequest("User with this username has exist.");
 			}
 		}
 		[Authorize]
@@ -103,7 +103,7 @@ namespace WebApi.Controllers
 
 			if (await userService.ChangePassword(user.Id, model.NewPassword))
 			{
-				return Ok(new { message = "password changed successfully."});
+				return Ok(new { message = "password changed successfully." });
 			}
 
 			return BadRequest("change password failed.");
@@ -144,7 +144,7 @@ namespace WebApi.Controllers
 
 			await jwtTokenService.RevokeUserBearerTokensAsync(user.Id, refreshToken);
 
-			return Ok(new { message = "You loged out successfully." });
+			return Ok(new { message = "You logged out successfully." });
 		}
 
 	}

@@ -1,7 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Models;
 using Domain.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System;
@@ -14,17 +13,17 @@ using System.Threading.Tasks;
 
 namespace Service
 {
-	public class JwtTokenService : IJwtTokenService
+    public class JwtTokenService : IJwtTokenService
 	{
 		private readonly IUserService userService;
 		private readonly ISecurityService securityService;
-		private readonly IOptionsSnapshot<JwtOptions> jwtOptionSpanshot;
+		private readonly IOptionsSnapshot<JwtOptions> jwtOption;
 
-		public JwtTokenService(IUserService userService, ISecurityService securityService, IOptionsSnapshot<JwtOptions> jwtOptionSpanshot)
+		public JwtTokenService(IUserService userService, ISecurityService securityService, IOptionsSnapshot<JwtOptions> jwtOption)
 		{
 			this.userService = userService;
 			this.securityService = securityService;
-			this.jwtOptionSpanshot = jwtOptionSpanshot;
+			this.jwtOption = jwtOption;
 		}
 
 		public async Task AddUserTokenAsync(User user, string refreshTokenSerial, string accessToken, string refreshTokenSourceSerial)
@@ -33,11 +32,10 @@ namespace Service
 			var token = new Token
 			{
 				RefreshTokenIdHash = securityService.GetSha256Hash(refreshTokenSerial),
-				RefreshTokenIdHashSource = string.IsNullOrWhiteSpace(refreshTokenSourceSerial) ?
-																		 null : securityService.GetSha256Hash(refreshTokenSourceSerial),
+				RefreshTokenIdHashSource = string.IsNullOrWhiteSpace(refreshTokenSourceSerial) ? null : securityService.GetSha256Hash(refreshTokenSourceSerial),
 				AccessTokenHash = securityService.GetSha256Hash(accessToken),
-				RefreshTokenExpiresDateTime = now.AddMinutes(jwtOptionSpanshot.Value.RefreshTokenExpirationMinutes),
-				AccessTokenExpiresDateTime = now.AddMinutes(jwtOptionSpanshot.Value.AccessTokenExpirationMinutes)
+				RefreshTokenExpiresDateTime = now.AddMinutes(jwtOption.Value.RefreshTokenExpirationMinutes),
+				AccessTokenExpiresDateTime = now.AddMinutes(jwtOption.Value.AccessTokenExpirationMinutes)
 			};
 
 			await userService.DeleteTokensWithSameRefreshTokenSourceAsync(token.RefreshTokenIdHashSource, user.Id);
@@ -46,8 +44,8 @@ namespace Service
 
 		public JwtTokensData CreateJwtTokens(User user)
 		{
-			var (accessToken, claims) = createAccessToken(user);
-			var (refreshTokenValue, refreshTokenSerial) = createRefreshToken();
+			var (accessToken, claims) = CreateAccessToken(user);
+			var (refreshTokenValue, refreshTokenSerial) = CreateRefreshToken();
 			return new JwtTokensData
 			{
 				AccessToken = accessToken,
@@ -57,59 +55,11 @@ namespace Service
 			};
 		}
 
-		public async Task<bool> IsValidTokenAsync(string accessToken, string userId)
+		private (string AccessToken, IEnumerable<Claim> Claims) CreateAccessToken(User user)
 		{
-			var accessTokenHash = securityService.GetSha256Hash(accessToken);
-			var userToken = await userService.FindTokenByUserIdAndAccessTokenAsync(userId, accessTokenHash);
-			return userToken?.AccessTokenExpiresDateTime >= DateTimeOffset.UtcNow;
-		}
+			string jwtIssuer = jwtOption.Value.Issuer;
 
-		public async Task ValidateAsync(TokenValidatedContext context)
-		{
-			ClaimsIdentity claimsIdentity = context.Principal.Identity as ClaimsIdentity;
-
-			if (claimsIdentity?.Claims == null || claimsIdentity.Claims.Any() == false)
-			{
-				context.Fail("This is not out issued token. It has no claims.");
-				return;
-			}
-
-			Claim serialNumberClaim = claimsIdentity.FindFirst(ClaimTypes.SerialNumber);
-			if (serialNumberClaim == null)
-			{
-				context.Fail("This is not out issued token. It has no serial.");
-				return;
-			}
-
-			string userId = claimsIdentity.FindFirst(ClaimTypes.UserData).Value;
-			if (string.IsNullOrWhiteSpace(userId))
-			{
-				context.Fail("This is not out issued token. It has no user-id.");
-				return;
-			}
-
-			User user = await userService.FindUserByIdAsync(userId);
-			if (user == null || user.SerialNumber != serialNumberClaim.Value || user.IsActive == false)
-			{
-				// user has changed his/her password/roles/stat/IsActive
-				context.Fail("This token is expired. Please login again.");
-			}
-
-			if (!(context.SecurityToken is Microsoft.IdentityModel.JsonWebTokens.JsonWebToken accessToken) || string.IsNullOrWhiteSpace(accessToken.EncodedToken) || !await IsValidTokenAsync(accessToken.EncodedToken, userId))
-			{
-				context.Fail("This token is not in out database");
-				return;
-			}
-
-			await userService.UpdateUserLastActivityDateAsync(user);
-
-		}
-
-		private (string AccessToken, IEnumerable<Claim> Claims) createAccessToken(User user)
-		{
-			string jwtIssuer = jwtOptionSpanshot.Value.Issuer;
-
-			List<Claim> claims = new List<Claim> {
+			List<Claim> claims = [
 			new Claim(JwtRegisteredClaimNames.Jti, securityService.CreateCryptographicallySecureGuid().ToString(), ClaimValueTypes.String, jwtIssuer),
 			new Claim(JwtRegisteredClaimNames.Iss, jwtIssuer, ClaimValueTypes.String, jwtIssuer),
 			new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64, jwtIssuer),
@@ -118,34 +68,33 @@ namespace Service
 			new Claim("DisplayName", user.DisplayName, ClaimValueTypes.String, jwtIssuer),
 			new Claim(ClaimTypes.SerialNumber, user.SerialNumber, ClaimValueTypes.String, jwtIssuer),
 			new Claim(ClaimTypes.UserData, user.Id.ToString(), ClaimValueTypes.String, jwtIssuer)
-			};
+			];
 
-			List<Role> roles = user.Roles.ToList();
-			foreach (Role role in roles)
+			foreach (Role role in user.Roles)
 			{
 				claims.Add(new Claim(ClaimTypes.Role, role.Name, ClaimValueTypes.String, jwtIssuer));
 			}
 
-			SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptionSpanshot.Value.Key));
+			SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Value.Key));
 			SigningCredentials credential = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
 			DateTime now = DateTime.UtcNow;
 
 			JwtSecurityToken token = new JwtSecurityToken(
 				issuer: jwtIssuer,
-				audience: jwtOptionSpanshot.Value.Audience,
+				audience: jwtOption.Value.Audience,
 				claims: claims,
 				notBefore: now,
-				expires: now.AddMinutes(jwtOptionSpanshot.Value.AccessTokenExpirationMinutes),
+				expires: now.AddMinutes(jwtOption.Value.AccessTokenExpirationMinutes),
 				signingCredentials: credential
 			);
 
 			return (new JwtSecurityTokenHandler().WriteToken(token), claims);
 		}
 
-		private (string RefreshTokenValue, string RefreshTokenSerial) createRefreshToken()
+		private (string RefreshTokenValue, string RefreshTokenSerial) CreateRefreshToken()
 		{
-			string jwtIssuer = jwtOptionSpanshot.Value.Issuer;
+			string jwtIssuer = jwtOption.Value.Issuer;
 
 			string refreshTokenSerial = securityService.CreateCryptographicallySecureGuid().ToString().Replace("-", "");
 
@@ -156,15 +105,15 @@ namespace Service
 								new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64, jwtIssuer),
 								new Claim(ClaimTypes.SerialNumber, refreshTokenSerial, ClaimValueTypes.String, jwtIssuer)
 						};
-			SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptionSpanshot.Value.Key));
+			SymmetricSecurityKey key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Value.Key));
 			SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 			DateTime now = DateTime.UtcNow;
 			JwtSecurityToken token = new JwtSecurityToken(
 					issuer: jwtIssuer,
-					audience: jwtOptionSpanshot.Value.Audience,
+					audience: jwtOption.Value.Audience,
 					claims: claims,
 					notBefore: now,
-					expires: now.AddMinutes(jwtOptionSpanshot.Value.RefreshTokenExpirationMinutes),
+					expires: now.AddMinutes(jwtOption.Value.RefreshTokenExpirationMinutes),
 					signingCredentials: creds);
 			string refreshTokenValue = new JwtSecurityTokenHandler().WriteToken(token);
 
@@ -173,7 +122,7 @@ namespace Service
 
 		private async Task AddUserTokenAsync(Token userToken, string userId)
 		{
-			if (!jwtOptionSpanshot.Value.AllowMultipleLoginsFromTheSameUser)
+			if (!jwtOption.Value.AllowMultipleLoginsFromTheSameUser)
 			{
 				await InvalidateUserTokensAsync(userId);
 			}
@@ -203,7 +152,7 @@ namespace Service
 							RequireExpirationTime = true,
 							ValidateIssuer = false,
 							ValidateAudience = false,
-							IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptionSpanshot.Value.Key)),
+							IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOption.Value.Key)),
 							ValidateIssuerSigningKey = true,
 							ValidateLifetime = true,
 							ClockSkew = TimeSpan.Zero
@@ -228,7 +177,7 @@ namespace Service
 		{
 			if (!string.IsNullOrWhiteSpace(userId))
 			{
-				if (jwtOptionSpanshot.Value.AllowSignoutAllUserActiveClients)
+				if (jwtOption.Value.AllowSignoutAllUserActiveClients)
 				{
 					await InvalidateUserTokensAsync(userId);
 				}

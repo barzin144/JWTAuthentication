@@ -22,12 +22,12 @@ namespace WebApi.Controllers
 		}
 
 		[HttpGet]
-		[Authorize(Policy = CustomRoles.Admin)]
+		[Authorize(Roles = "Admin")]
 		public IActionResult GetDataIfIamAdmin()
 		{
 			return Ok(new
 			{
-				Message = "If you can seethis message that mean you have admin access."
+				Message = "If you can see this message that mean you have admin access."
 			});
 		}
 

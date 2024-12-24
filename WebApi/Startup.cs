@@ -20,7 +20,7 @@ namespace WebApi
 			services.AddCustomOptions(configuration);
 			services.AddCustomServices();
 			services.AddCustomJwtBearer(configuration);
-			services.AddCustonCors();
+			services.AddCustomCors();
 			services.AddControllers();
 			services.AddCustomSwagger();
 			services.AddCustomMongoDbService(configuration);

@@ -2,7 +2,7 @@
 
 namespace WebApi.ViewModels
 {
-	public class RegisteUserViewModel
+	public class RegisterUserViewModel
 	{
 		[Required]
 		public string UserName { get; set; }

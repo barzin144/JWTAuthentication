@@ -1,11 +1,7 @@
-﻿using DataAccess;
-using Domain.Entities;
+﻿using Domain.Entities;
 using Domain.Repositories;
 using Domain.Services;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -23,6 +19,7 @@ namespace Service
 			this.contextAccessor = contextAccessor;
 			this.securityService = securityService;
 		}
+
 		public async Task<bool> AddUserAsync(User user)
 		{
 			return await userRepository.InsertOneAsync(user);
@@ -39,11 +36,6 @@ namespace Service
 			return await userRepository.FindByIdAsync(userId);
 		}
 
-		public async Task UpdateUserLastActivityDateAsync(User user)
-		{
-			await userRepository.UpdateUserLastActivityDateAsync(user);
-		}
-
 		public async Task<bool> DeleteUserTokensByUserIdAsync(string userId)
 		{
 			return await userRepository.DeleteUserTokensByUserIdAsync(userId);
@@ -52,11 +44,6 @@ namespace Service
 		public async Task<bool> AddUserTokenByUserIdAsync(string userId, Token token)
 		{
 			return await userRepository.AddUserTokenByUserIdAsync(userId, token);
-		}
-
-		public async Task<Token> FindTokenByUserIdAndAccessTokenAsync(string userId, string accessTokenHash)
-		{
-			return await userRepository.FindTokenByUserIdAndAccessTokenAsync(userId, accessTokenHash);
 		}
 
 		public async Task<bool> DeleteExpiredTokensAsync(string userId)
@@ -78,7 +65,7 @@ namespace Service
 		{
 			return await userRepository.FindUserByUsernameAsync(username);
 		}
-		
+
 		public async Task<User> GetCurrentUserDataAsync()
 		{
 			ClaimsIdentity claimsIdentity = contextAccessor.HttpContext.User.Identity as ClaimsIdentity;

@@ -58,21 +58,6 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async void UpdateUserLastActivityDateAsync_ShouldCallUpdateUserLastActivityDateAsync()
-    {
-        //Arrange
-        User newUser = new User() { UserName = "abc" };
-        User calledUser = new User();
-        _userRepository.Setup(x => x.UpdateUserLastActivityDateAsync(It.IsAny<User>()))
-            .Callback<User>(x => calledUser = x);
-        //Act
-        await _userService.UpdateUserLastActivityDateAsync(newUser);
-        //Assert
-        _userRepository.Verify(x => x.UpdateUserLastActivityDateAsync(It.IsAny<User>()), Times.Once);
-        Assert.Equal(newUser.UserName, calledUser.UserName);
-    }
-
-    [Fact]
     public async void DeleteUserTokensByUserIdAsync_ShouldCallDeleteUserTokensByUserIdAsync()
     {
         //Arrange
@@ -96,18 +81,6 @@ public class UserServiceTest
         var result = await _userService.AddUserTokenByUserIdAsync(userID, token);
         //Assert
         _userRepository.Verify(x => x.AddUserTokenByUserIdAsync(userID, token), Times.Once);
-    }
-
-    [Fact]
-    public async void FindTokenByUserIdAndAccessTokenAsync_ShouldCallFindTokenByUserIdAndAccessTokenAsync()
-    {
-        //Arrange
-        string userID = "abc";
-        string accessTokenHash = "abc";
-        //Act
-        var result = await _userService.FindTokenByUserIdAndAccessTokenAsync(userID, accessTokenHash);
-        //Assert
-        _userRepository.Verify(x => x.FindTokenByUserIdAndAccessTokenAsync(userID, accessTokenHash), Times.Once);
     }
 
     [Fact]
@@ -161,7 +134,7 @@ public class UserServiceTest
         //Arrange
         string userId = "abc";
         var claims = new List<Claim> { new Claim(ClaimTypes.UserData, userId) };
-        _httpContextAccessor.Setup(req => req.HttpContext.User.Identity).Returns(new ClaimsIdentity(claims));
+        _httpContextAccessor.Setup(req => req.HttpContext!.User.Identity).Returns(new ClaimsIdentity(claims));
         //Act
         var result = await _userService.GetCurrentUserDataAsync();
         //Assert

@@ -7,8 +7,6 @@ namespace Domain.Services
 {
 	public interface IJwtTokenService
 	{
-		Task ValidateAsync(TokenValidatedContext context);
-		Task<bool> IsValidTokenAsync(string accessToken, string userId);
 		JwtTokensData CreateJwtTokens(User user);
 		Task AddUserTokenAsync(User user, string refreshTokenSerial, string accessToken, string refreshTokenSourceSerial);
 		string GetRefreshTokenSerial(string refreshTokenValue);
