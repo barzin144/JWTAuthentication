@@ -3,12 +3,13 @@ using System.Linq.Expressions;
 using Domain.Entities;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Domain.Models;
 
 namespace Service.test;
 
 public class UserServiceTest
 {
-    private Mock<IUserRepository> _userRepository;
+    private readonly Mock<IUserRepository> _userRepository;
     private readonly Mock<IHttpContextAccessor> _httpContextAccessor;
     private readonly SecurityService _securityService;
     private readonly UserService _userService;
@@ -22,24 +23,33 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async void FindUserByUsernameAndPasswordAsync_ShouldSendCorrectFilter()
+    public async void FindUserByLoginAsync_ShouldSendCorrectFilter()
     {
         //Arrange
-        string username = "abc";
-        string password = "abc";
-        string passwordHash = _securityService.GetSha256Hash(password);
+        string provider = "google";
+        string providerKey = "abc";
+        string providerKeyHash = _securityService.GetSha256Hash(providerKey);
         //Act
-        var result = await _userService.FindUserByUsernameAndPasswordAsync(username, password);
+        var result = await _userService.FindUserByLoginAsync(provider, providerKey);
         //Assert
-        _userRepository.Verify(x => x.FindUserByUsernameAndPasswordAsync(s => s.UserName == username && s.Password == passwordHash), Times.Once);
-        _userRepository.Verify(x => x.FindUserByUsernameAndPasswordAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once);
+        _userRepository.Verify(x => x.FindUserAsync(s => s.Provider == provider && s.ProviderKey == providerKeyHash), Times.Once);
+        _userRepository.Verify(x => x.FindUserAsync(It.IsAny<Expression<Func<User, bool>>>()), Times.Once);
     }
 
     [Fact]
     public async void AddUserAsync_ShouldCallInsertOneAsync()
     {
         //Arrange
-        User newUser = new User();
+        User newUser = new User
+        {
+            Name = "abc",
+            Email = "abc@g.com",
+            ProviderKey = _securityService.GetSha256Hash("abc"),
+            Provider = "Google",
+            IsActive = true,
+            Roles = [new Role { Name = "User" }],
+            SerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString().Replace("-", "")
+        };
         //Act
         var result = await _userService.AddUserAsync(newUser);
         //Assert
@@ -118,14 +128,14 @@ public class UserServiceTest
     }
 
     [Fact]
-    public async void FindUserByUsernameAsync_ShouldCallFindUserByUsernameAsync()
+    public async void FindUserByEmailAsync_ShouldCallFindUserByUsernameAsync()
     {
         //Arrange
-        string username = "abc";
+        string email = "abc@g.com";
         //Act
-        var result = await _userService.FindUserByUsernameAsync(username);
+        var result = await _userService.FindUserByEmailAsync(email);
         //Assert
-        _userRepository.Verify(x => x.FindUserByUsernameAsync(username), Times.Once);
+        _userRepository.Verify(x => x.FindUserAsync(x => x.Email == email), Times.Once);
     }
 
     [Fact]
@@ -139,18 +149,5 @@ public class UserServiceTest
         var result = await _userService.GetCurrentUserDataAsync();
         //Assert
         _userRepository.Verify(x => x.FindByIdAsync(userId), Times.Once);
-    }
-
-    [Fact]
-    public void ChangePassword_ShouldCallChangePassword()
-    {
-        //Arrange
-        string newPassword = "abc";
-        string userID = "abc";
-        string newPasswordHash = _securityService.GetSha256Hash(newPassword);
-        //Act
-        var result = _userService.ChangePassword(userID, newPassword);
-        //Assert
-        _userRepository.Verify(x => x.ChangePassword(userID, newPasswordHash, It.IsAny<string>()), Times.Once);
     }
 }

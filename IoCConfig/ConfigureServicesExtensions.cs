@@ -1,21 +1,19 @@
 ﻿using Service;
-using System.Text;
 using Domain.Models;
 using Domain.Services;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
 using DataAccess;
 using MongoDB.Driver;
 using Domain.Repositories;
-using System;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 
 namespace IoCConfig
 {
-    public static class ConfigureServicesExtensions
+	public static class ConfigureServicesExtensions
 	{
 		public static void AddCustomCors(this IServiceCollection services)
 		{
@@ -30,28 +28,19 @@ namespace IoCConfig
 			));
 		}
 
-		public static void AddCustomJwtBearer(this IServiceCollection services, IConfiguration configuration)
+		public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddAuthentication(options =>
 			{
-				options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-				options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
-				options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
 			})
-			.AddJwtBearer(configureOptions =>
+			.AddCookie()
+			.AddGoogle(options =>
 			{
-				configureOptions.RequireHttpsMetadata = false;
-				configureOptions.SaveToken = true;
-				configureOptions.TokenValidationParameters = new TokenValidationParameters
-				{
-					ValidIssuer = configuration["Jwt:Issuer"],
-					ValidateIssuer = true,
-					ValidAudience = configuration["Jwt:Audience"],
-					ValidateAudience = true,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
-					ValidateIssuerSigningKey = true,
-					ValidateLifetime = true
-				};
+				options.ClientId = configuration["OAuth:GoogleClientId"] ?? "";
+				options.ClientSecret = configuration["OAuth:GoogleClientSecret"] ?? "";
+				options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
 			});
 		}
 
@@ -82,9 +71,7 @@ namespace IoCConfig
 
 				options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 				{
-					Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-						Enter 'Bearer' [space] and then your token in the text input below.
-						\r\n\r\nExample: 'Bearer 12345abcdef'",
+					Description = @"JWT Authorization header using the Bearer scheme.",
 					Name = "Authorization",
 					In = ParameterLocation.Header,
 					Type = SecuritySchemeType.ApiKey,

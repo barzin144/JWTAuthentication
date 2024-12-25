@@ -1,6 +1,5 @@
 ﻿using Domain.Entities;
 using Domain.Models;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using System.Threading.Tasks;
 
 namespace Domain.Services

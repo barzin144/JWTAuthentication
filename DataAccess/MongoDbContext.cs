@@ -7,19 +7,19 @@ namespace DataAccess
 	{
 		IMongoCollection<T> GetCollection<T>(string name);
 	}
-	
+
 	public class MongoDbContext : IMongoDbContext
 	{
-		private readonly IMongoDatabase mongoDatabase;
+		private readonly IMongoDatabase _mongoDatabase;
 
 		public MongoDbContext(IMongoClient client, string dbName)
 		{
-			mongoDatabase = client.GetDatabase(dbName);
+			_mongoDatabase = client.GetDatabase(dbName);
 		}
 
 		public IMongoCollection<T> GetCollection<T>(string name)
 		{
-			return mongoDatabase.GetCollection<T>(name);
+			return _mongoDatabase.GetCollection<T>(name);
 		}
 	}
 }
