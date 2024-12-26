@@ -10,6 +10,10 @@ using MongoDB.Driver;
 using Domain.Repositories;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using System;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace IoCConfig
 {
@@ -30,6 +34,8 @@ namespace IoCConfig
 
 		public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
 		{
+			var rsa = RSA.Create();
+			rsa.ImportRSAPrivateKey(Convert.FromBase64String(configuration["Jwt:PrivateKey"] ?? ""), out _);
 			services.AddAuthentication(options =>
 			{
 				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -41,6 +47,19 @@ namespace IoCConfig
 				options.ClientId = configuration["OAuth:GoogleClientId"] ?? "";
 				options.ClientSecret = configuration["OAuth:GoogleClientSecret"] ?? "";
 				options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			})
+			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+			{
+				options.TokenValidationParameters = new TokenValidationParameters
+				{
+					ValidateIssuer = true,
+					ValidateAudience = true,
+					ValidateLifetime = true,
+					ValidateIssuerSigningKey = true,
+					ValidIssuer = configuration["Jwt:Issuer"],
+					ValidAudience = configuration["Jwt:Audience"],
+					IssuerSigningKey = new RsaSecurityKey(rsa)
+				};
 			});
 		}
 

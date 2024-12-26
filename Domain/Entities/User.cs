@@ -1,4 +1,5 @@
-﻿using Domain.Models;
+﻿using Domain.Enums;
+using Domain.Models;
 using System;
 using System.Collections.Generic;
 
@@ -12,7 +13,7 @@ namespace Domain.Entities
 			Tokens = new List<Token>();
 		}
 		public required string Email { get; set; }
-		public required string Provider { get; set; }
+		public required Provider Provider { get; set; }
 		public required string ProviderKey { get; set; }
 		public required string Name { get; set; }
 		public bool IsActive { get; set; }

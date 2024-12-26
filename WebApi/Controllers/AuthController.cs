@@ -1,10 +1,13 @@
 ﻿using System.Security.Claims;
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Models;
 using Domain.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WebApi.ViewModels;
 
@@ -24,6 +27,93 @@ namespace WebApi.Controllers
 			_securityService = securityService;
 			_jwtTokenService = jwtTokenService;
 		}
+
+		[HttpPost("login")]
+		public async Task<IActionResult> Login(LoginUserViewModel loginUser)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			User user = await _userService.FindUserByLoginAsync(loginUser.Email, Provider.Password, loginUser.Password);
+
+			if (user == null)
+			{
+				return NotFound();
+			}
+			if (user.IsActive == false)
+			{
+				return Unauthorized();
+			}
+
+			JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
+
+			await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
+
+			return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
+		}
+
+		[HttpPost("register")]
+		public async Task<IActionResult> Register(RegisterUserViewModel registerUser)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+			if (await _userService.FindUserByEmailAsync(registerUser.Email) == null)
+			{
+				User newUser = new User
+				{
+					Name = registerUser.Name,
+					Email = registerUser.Email,
+					ProviderKey = _securityService.GetSha256Hash(registerUser.Password),
+					Provider = Provider.Password,
+					IsActive = true,
+					Roles = [new Role { Name = "User" }],
+					SerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString().Replace("-", "")
+				};
+
+				await _userService.AddUserAsync(newUser);
+
+				JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(newUser);
+
+				await _jwtTokenService.AddUserTokenAsync(newUser, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
+
+				return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
+			}
+			else
+			{
+				return BadRequest("User with this Email has exist.");
+			}
+		}
+
+		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+		[HttpPost("change-password")]
+		public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+		{
+			if (!ModelState.IsValid)
+			{
+				return BadRequest(ModelState);
+			}
+
+			User user = await _userService.GetCurrentUserDataAsync();
+
+			if (user.ProviderKey != _securityService.GetSha256Hash(model.OldPassword))
+			{
+				return BadRequest("Old password is wrong.");
+			}
+
+			if (await _userService.ChangePassword(user.Id, model.NewPassword))
+			{
+				return Ok(new { message = "password changed successfully." });
+			}
+
+			return BadRequest("change password failed.");
+
+		}
+
+
 		[HttpGet("google-login")]
 		public IActionResult GoogleLogin()
 		{
@@ -55,7 +145,7 @@ namespace WebApi.Controllers
 			var nameIdentifier = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 			ArgumentNullException.ThrowIfNull(nameIdentifier, nameof(nameIdentifier));
 
-			var user = await _userService.FindUserByEmailAsync(email);
+			var user = await _userService.FindUserByLoginAsync(email, Provider.Google, nameIdentifier);
 
 			if (user is null)
 			{
@@ -64,7 +154,7 @@ namespace WebApi.Controllers
 					Name = name,
 					Email = email,
 					ProviderKey = _securityService.GetSha256Hash(nameIdentifier),
-					Provider = "Google",
+					Provider = Provider.Google,
 					IsActive = true,
 					Roles = [new Role { Name = "User" }],
 					SerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString().Replace("-", "")

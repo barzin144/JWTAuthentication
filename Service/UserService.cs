@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using Domain.Repositories;
 using Domain.Services;
 using Microsoft.AspNetCore.Http;
@@ -25,10 +26,10 @@ namespace Service
 			return await _userRepository.InsertOneAsync(user);
 		}
 
-		public async Task<User> FindUserByLoginAsync(string provider, string providerKey)
+		public async Task<User> FindUserByLoginAsync(string email, Provider provider, string providerKey)
 		{
 			string providerKeyHash = _securityService.GetSha256Hash(providerKey);
-			return await _userRepository.FindUserAsync(s => s.Provider == provider && s.ProviderKey == providerKeyHash);
+			return await _userRepository.FindUserAsync(s => s.Email == email && s.Provider == provider && s.ProviderKey == providerKeyHash);
 		}
 
 		public async ValueTask<User> FindUserByIdAsync(string userId)
@@ -72,6 +73,14 @@ namespace Service
 
 			string userId = claimsIdentity?.FindFirst(ClaimTypes.UserData).Value;
 			return await FindUserByIdAsync(userId);
+		}
+
+		public async Task<bool> ChangePassword(string userId, string newPassword)
+		{
+			string newPasswordHash = _securityService.GetSha256Hash(newPassword);
+			string newSerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString();
+
+			return await _userRepository.ChangePassword(userId, newPasswordHash, newSerialNumber);
 		}
 	}
 }

@@ -15,5 +15,6 @@ namespace Domain.Repositories
 		Task<bool> UpdateUserLastActivityDateAsync(User user);
 		Task<bool> DeleteExpiredTokensAsync(string userId);
 		Task<bool> DeleteTokensWithSameRefreshTokenSourceAsync(string refreshTokenIdHashSource, string userId);
+		Task<bool> ChangePassword(string userId, string newPasswordHash, string newSerialNumber);
 	}
 }
