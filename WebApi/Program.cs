@@ -18,14 +18,12 @@ services.AddSerilog();
 
 var app = builder.Build();
 
-
-if (app.Environment.IsDevelopment())
+if (configuration.GetValue<bool>("EnableSwagger"))
 {
 	app.UseSwagger();
-	app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "JWT Authentication API V1"); });
+	app.UseSwaggerUI(c => { c.SwaggerEndpoint("/swagger/v1/swagger.json", "Micro IDP API V1"); });
 }
 
-app.UseHttpsRedirection();
 app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();

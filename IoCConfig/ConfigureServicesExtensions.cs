@@ -75,6 +75,7 @@ namespace IoCConfig
 		public static void AddCustomOptions(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddOptions<JwtOptions>().Bind(configuration.GetSection("Jwt"));
+			services.AddOptions<OAuthOptions>().Bind(configuration.GetSection("OAuth"));
 		}
 
 		public static void AddCustomSwagger(this IServiceCollection services)
@@ -84,7 +85,7 @@ namespace IoCConfig
 			{
 				options.SwaggerDoc("v1", new OpenApiInfo
 				{
-					Title = "JWT Authentication API Document",
+					Title = "Micro IDP API Document",
 					Version = "v1"
 				});
 

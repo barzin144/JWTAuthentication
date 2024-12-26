@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using WebApi.ViewModels;
 
 namespace WebApi.Controllers
@@ -17,12 +18,14 @@ namespace WebApi.Controllers
 	[ApiController]
 	public class AuthController : ControllerBase
 	{
+		private readonly OAuthOptions _oAuthOptions;
 		private readonly IUserService _userService;
 		private readonly ISecurityService _securityService;
 		private readonly IJwtTokenService _jwtTokenService;
 
-		public AuthController(IUserService userService, ISecurityService securityService, IJwtTokenService jwtTokenService)
+		public AuthController(IOptions<OAuthOptions> oAuthOptions, IUserService userService, ISecurityService securityService, IJwtTokenService jwtTokenService)
 		{
+			_oAuthOptions = oAuthOptions.Value;
 			_userService = userService;
 			_securityService = securityService;
 			_jwtTokenService = jwtTokenService;
@@ -119,7 +122,7 @@ namespace WebApi.Controllers
 		{
 			var properties = new AuthenticationProperties
 			{
-				RedirectUri = Url.Action("GoogleCallback")
+				RedirectUri = _oAuthOptions.GoogleCallbackURL
 			};
 			return Challenge(properties, GoogleDefaults.AuthenticationScheme);
 		}

@@ -43,3 +43,6 @@ msbuild.log
 msbuild.err
 msbuild.wrn
 **/appsettings.Development.json
+aspnetcore.crt
+aspnetcore.key
+aspnetcore.pfx
