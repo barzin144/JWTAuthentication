@@ -46,12 +46,12 @@
 
   ```YML
   webapi:
-  		build: .
-  		ports:
-  			- 8000:80
-  			- 8001:443
-  		environment:
-  			JWT__PrivateKey: "PRIVATE_KEY"
+    build: .
+    ports:
+      - 8000:80
+      - 8001:443
+    environment:
+      JWT__PrivateKey: "PRIVATE_KEY"
   ```
 
 - #### Generate certificate to host application with docker over HTTPS
@@ -81,9 +81,9 @@
 
   ```YML
   volumes:
-  	- type: bind
-  		source: ./aspnetcore.pfx
-  		target: /https/aspnetcore.pfx
+  - type: bind
+    source: ./aspnetcore.pfx
+    target: /https/aspnetcore.pfx
   ```
 
 - #### Sing in with Google configuration
