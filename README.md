@@ -44,7 +44,7 @@
 
 - #### Replace PRIVATE_KEY placeholder in docker-compose.yml with generated private key
 
-  ```JSON
+  ```YML
   webapi:
   		build: .
   		ports:
@@ -79,7 +79,7 @@
 
   Replace volume mount source with generated certificate path in docker-compose.yml
 
-  ```JSON
+  ```YML
   volumes:
   	- type: bind
   		source: ./aspnetcore.pfx
@@ -104,11 +104,11 @@
 - #### Add Jwt section to you appsettings.json
 
   ```JSON
-  	"Jwt": {
-  		"PublicKey": "PUBLIC_KEY",
-  		"Issuer": "https://localhost:8001",
-  		"Audience": "http://localhost:5010"
-  	}
+  "Jwt": {
+  	"PublicKey": "PUBLIC_KEY",
+  	"Issuer": "https://localhost:8001",
+  	"Audience": "http://localhost:5010"
+  }
   ```
 
   Replace PUBLIC_KEY placeholder with generated public key
@@ -126,15 +126,15 @@
   services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
   .AddJwtBearer(options =>
   {
-  		options.TokenValidationParameters = new TokenValidationParameters
-  		{
-  				ValidateIssuer = true,
-  				ValidateAudience = true,
-  				ValidateLifetime = true,
-  				ValidateIssuerSigningKey = true,
-  				ValidIssuer = configuration["Jwt:Issuer"],
-  				ValidAudience = configuration["Jwt:Audience"],
-  				IssuerSigningKey = new RsaSecurityKey(rsa)
-  		};
+  	options.TokenValidationParameters = new TokenValidationParameters
+  	{
+  		ValidateIssuer = true,
+  		ValidateAudience = true,
+  		ValidateLifetime = true,
+  		ValidateIssuerSigningKey = true,
+  		ValidIssuer = configuration["Jwt:Issuer"],
+  		ValidAudience = configuration["Jwt:Audience"],
+  		IssuerSigningKey = new RsaSecurityKey(rsa)
+  	};
   });
   ```
