@@ -12,14 +12,14 @@ namespace DataAccess
 {
 	public class UserRepository : BaseRepository<User>, IUserRepository
 	{
-		private readonly ISecurityService securityService;
+		private readonly ISecurityService _securityService;
 
 		public UserRepository(IMongoDbContext mongoDbContext, ISecurityService securityService) : base(mongoDbContext)
 		{
-			this.securityService = securityService;
+			_securityService = securityService;
 		}
 
-		public async Task<User> FindUserByUsernameAndPasswordAsync(Expression<Func<User,bool>> filter)
+		public async Task<User> FindUserAsync(Expression<Func<User, bool>> filter)
 		{
 			try
 			{
@@ -154,7 +154,7 @@ namespace DataAccess
 		{
 			try
 			{
-				string refreshTokenHash = securityService.GetSha256Hash(refreshToken);
+				string refreshTokenHash = _securityService.GetSha256Hash(refreshToken);
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq($"{nameof(User.Tokens)}.{nameof(Token.RefreshTokenIdHash)}", refreshTokenHash);
 
 				User user = await collection.Find(filter).FirstOrDefaultAsync();
@@ -170,22 +170,9 @@ namespace DataAccess
 			}
 		}
 
-		public async Task<User> FindUserByUsernameAsync(string username)
-		{
-			try
-			{
-				var s = await collection.Find(s => s.UserName == username).SingleOrDefaultAsync();
-				return s;
-			}
-			catch
-			{
-				throw;
-			}
-		}
-
 		public async Task<bool> ChangePassword(string userId, string newPasswordHash, string newSerialNumber)
 		{
-			UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Set(i => i.Password, newPasswordHash).Set(x => x.SerialNumber, newSerialNumber);
+			UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Set(i => i.ProviderKey, newPasswordHash).Set(x => x.SerialNumber, newSerialNumber);
 
 			try
 			{
@@ -194,10 +181,8 @@ namespace DataAccess
 			}
 			catch
 			{
-
 				throw;
 			}
-
 		}
 	}
 }

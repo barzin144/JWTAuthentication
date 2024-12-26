@@ -1,25 +1,36 @@
-version: "3"
 services:
-        webapi:
-                build: .
-                ports:
-                   - 5000:8080
-                environment:
-                    ConnectionStrings__MongoDb: "mongodb://root:Mongo_DB_Secret_Password@mongo:27017"
-                networks:
-                   - jwtNetwork
-                depends_on:
-                   - "mongo"
-        mongo:
-                image: mongo
-                environment:
-                    MONGO_INITDB_ROOT_USERNAME: root
-                    MONGO_INITDB_ROOT_PASSWORD: Mongo_DB_Secret_Password
-                networks:
-                   - jwtNetwork
-                volumes:
-                   - type: bind
-                     source: ./mongodb
-                     target: /data/db
+  webapi:
+    build: .
+    ports:
+      - 8000:80
+      - 8001:443
+    environment:
+      ConnectionStrings__MongoDb: "mongodb://root:Mongo_DB_Secret_Password@mongo:27017"
+      Jwt__PrivateKey: "PRIVATE_KEY"
+      OAuth__GoogleCallbackURL: "https://localhost:8001/api/auth/google-callback"
+      OAuth__GoogleClientId: "GOOGLE_CLIENT_ID"
+      OAuth__GoogleClientSecret: "GOOGLE_CLIENT_SECRET"
+      ASPNETCORE_URLS: "https://+;http://+"
+      ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/aspnetcore.pfx"
+      ASPNETCORE_Kestrel__Certificates__Default__Password: "1234567890"
+    volumes:
+      - type: bind
+        source: ./aspnetcore.pfx
+        target: /https/aspnetcore.pfx
+    networks:
+      - microIDPNetwork
+    depends_on:
+      - "mongo"
+  mongo:
+    image: mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: Mongo_DB_Secret_Password
+    networks:
+      - microIDPNetwork
+    volumes:
+      - type: bind
+        source: ./mongodb
+        target: /data/db
 networks:
-        jwtNetwork:
+  microIDPNetwork:

@@ -1,5 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
 WORKDIR /src
+EXPOSE 80
+EXPOSE 443
 
 COPY ["DataAccess/DataAccess.csproj", "DataAccess/"]
 COPY ["Domain/Domain.csproj", "Domain/"]

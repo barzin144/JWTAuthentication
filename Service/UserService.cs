@@ -1,11 +1,8 @@
-﻿using DataAccess;
-using Domain.Entities;
+﻿using Domain.Entities;
+using Domain.Enums;
 using Domain.Repositories;
 using Domain.Services;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -13,75 +10,66 @@ namespace Service
 {
 	public class UserService : IUserService
 	{
-		private readonly IUserRepository userRepository;
-		private readonly IHttpContextAccessor contextAccessor;
-		private readonly ISecurityService securityService;
+		private readonly IUserRepository _userRepository;
+		private readonly IHttpContextAccessor _contextAccessor;
+		private readonly ISecurityService _securityService;
 
 		public UserService(IUserRepository userRepository, IHttpContextAccessor contextAccessor, ISecurityService securityService)
 		{
-			this.userRepository = userRepository;
-			this.contextAccessor = contextAccessor;
-			this.securityService = securityService;
-		}
-		public async Task<bool> AddUserAsync(User user)
-		{
-			return await userRepository.InsertOneAsync(user);
+			_userRepository = userRepository;
+			_contextAccessor = contextAccessor;
+			_securityService = securityService;
 		}
 
-		public async Task<User> FindUserByUsernameAndPasswordAsync(string username, string password)
+		public async Task<bool> AddUserAsync(User user)
 		{
-			string passwordHash = securityService.GetSha256Hash(password);
-			return await userRepository.FindUserByUsernameAndPasswordAsync(s => s.UserName == username && s.Password == passwordHash);
+			return await _userRepository.InsertOneAsync(user);
+		}
+
+		public async Task<User> FindUserByLoginAsync(string email, Provider provider, string providerKey)
+		{
+			string providerKeyHash = _securityService.GetSha256Hash(providerKey);
+			return await _userRepository.FindUserAsync(s => s.Email == email && s.Provider == provider && s.ProviderKey == providerKeyHash);
 		}
 
 		public async ValueTask<User> FindUserByIdAsync(string userId)
 		{
-			return await userRepository.FindByIdAsync(userId);
-		}
-
-		public async Task UpdateUserLastActivityDateAsync(User user)
-		{
-			await userRepository.UpdateUserLastActivityDateAsync(user);
+			return await _userRepository.FindByIdAsync(userId);
 		}
 
 		public async Task<bool> DeleteUserTokensByUserIdAsync(string userId)
 		{
-			return await userRepository.DeleteUserTokensByUserIdAsync(userId);
+			return await _userRepository.DeleteUserTokensByUserIdAsync(userId);
 		}
 
 		public async Task<bool> AddUserTokenByUserIdAsync(string userId, Token token)
 		{
-			return await userRepository.AddUserTokenByUserIdAsync(userId, token);
-		}
-
-		public async Task<Token> FindTokenByUserIdAndAccessTokenAsync(string userId, string accessTokenHash)
-		{
-			return await userRepository.FindTokenByUserIdAndAccessTokenAsync(userId, accessTokenHash);
+			return await _userRepository.AddUserTokenByUserIdAsync(userId, token);
 		}
 
 		public async Task<bool> DeleteExpiredTokensAsync(string userId)
 		{
-			return await userRepository.DeleteExpiredTokensAsync(userId);
+			return await _userRepository.DeleteExpiredTokensAsync(userId);
 		}
 
 		public async Task<bool> DeleteTokensWithSameRefreshTokenSourceAsync(string refreshTokenIdHashSource, string userId)
 		{
-			return await userRepository.DeleteTokensWithSameRefreshTokenSourceAsync(refreshTokenIdHashSource, userId);
+			return await _userRepository.DeleteTokensWithSameRefreshTokenSourceAsync(refreshTokenIdHashSource, userId);
 		}
 
 		public async Task<(Token token, User user)> FindUserAndTokenByRefreshTokenAsync(string refreshToken)
 		{
-			return await userRepository.FindUserAndTokenByRefreshTokenAsync(refreshToken);
+			return await _userRepository.FindUserAndTokenByRefreshTokenAsync(refreshToken);
 		}
 
-		public async Task<User> FindUserByUsernameAsync(string username)
+		public async Task<User> FindUserByEmailAsync(string email)
 		{
-			return await userRepository.FindUserByUsernameAsync(username);
+			return await _userRepository.FindUserAsync(x => x.Email == email);
 		}
-		
+
 		public async Task<User> GetCurrentUserDataAsync()
 		{
-			ClaimsIdentity claimsIdentity = contextAccessor.HttpContext.User.Identity as ClaimsIdentity;
+			ClaimsIdentity claimsIdentity = _contextAccessor.HttpContext.User.Identity as ClaimsIdentity;
 
 			string userId = claimsIdentity?.FindFirst(ClaimTypes.UserData).Value;
 			return await FindUserByIdAsync(userId);
@@ -89,10 +77,10 @@ namespace Service
 
 		public async Task<bool> ChangePassword(string userId, string newPassword)
 		{
-			string newPasswordHash = securityService.GetSha256Hash(newPassword);
-			string newSerialNumber = securityService.CreateCryptographicallySecureGuid().ToString();
+			string newPasswordHash = _securityService.GetSha256Hash(newPassword);
+			string newSerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString();
 
-			return await userRepository.ChangePassword(userId, newPasswordHash, newSerialNumber);
+			return await _userRepository.ChangePassword(userId, newPasswordHash, newSerialNumber);
 		}
 	}
 }

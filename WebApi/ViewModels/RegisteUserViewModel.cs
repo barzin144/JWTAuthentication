@@ -2,16 +2,17 @@
 
 namespace WebApi.ViewModels
 {
-	public class RegisteUserViewModel
+	public class RegisterUserViewModel
 	{
 		[Required]
-		public string UserName { get; set; }
-		
+		[EmailAddress]
+		public string Email { get; set; }
+
 		[Required]
 		[MinLength(6)]
 		public string Password { get; set; }
-		
+
 		[Required]
-		public string DisplayName { get; set; }
+		public string Name { get; set; }
 	}
 }

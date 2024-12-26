@@ -1,24 +1,25 @@
-﻿using System;
-using Service;
-using System.Text;
+﻿using Service;
 using Domain.Models;
 using Domain.Services;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using System.Collections.Generic;
 using DataAccess;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using MongoDB.Driver;
 using Domain.Repositories;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using System;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace IoCConfig
 {
 	public static class ConfigureServicesExtensions
 	{
-		public static void AddCustonCors(this IServiceCollection services)
+		public static void AddCustomCors(this IServiceCollection services)
 		{
 			services.AddCors(options =>
 			options.AddPolicy("CorsPolicy",
@@ -31,42 +32,33 @@ namespace IoCConfig
 			));
 		}
 
-		public static void AddCustomJwtBearer(this IServiceCollection services, IConfiguration configuration)
+		public static void AddCustomAuthentication(this IServiceCollection services, IConfiguration configuration)
 		{
-			services.AddAuthorization(options =>
-			{
-				options.AddPolicy(CustomRoles.Admin, policy => policy.RequireRole(CustomRoles.Admin));
-				options.AddPolicy(CustomRoles.User, policy => policy.RequireRole(CustomRoles.User));
-			});
-
+			var rsa = RSA.Create();
+			rsa.ImportRSAPrivateKey(Convert.FromBase64String(configuration["Jwt:PrivateKey"] ?? ""), out _);
 			services.AddAuthentication(options =>
-		 {
-			 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-			 options.DefaultSignInScheme = JwtBearerDefaults.AuthenticationScheme;
-			 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-		 })
-			.AddJwtBearer(configureOptions =>
 			{
-				configureOptions.RequireHttpsMetadata = false;
-				configureOptions.SaveToken = true;
-				configureOptions.TokenValidationParameters = new TokenValidationParameters
+				options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+				options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+			})
+			.AddCookie()
+			.AddGoogle(options =>
+			{
+				options.ClientId = configuration["OAuth:GoogleClientId"] ?? "";
+				options.ClientSecret = configuration["OAuth:GoogleClientSecret"] ?? "";
+				options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+			})
+			.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+			{
+				options.TokenValidationParameters = new TokenValidationParameters
 				{
-					ValidIssuer = configuration["Jwt:Issuer"],
 					ValidateIssuer = true,
-					ValidAudience = configuration["Jwt:Audience"],
 					ValidateAudience = true,
-					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["Jwt:Key"])),
-					ValidateIssuerSigningKey = true,
 					ValidateLifetime = true,
-					ClockSkew = TimeSpan.Zero
-				};
-				configureOptions.Events = new JwtBearerEvents
-				{
-					OnTokenValidated = context =>
-					{
-						IJwtTokenService jwtTokenService = context.HttpContext.RequestServices.GetRequiredService<IJwtTokenService>();
-						return jwtTokenService.ValidateAsync(context);
-					}
+					ValidateIssuerSigningKey = true,
+					ValidIssuer = configuration["Jwt:Issuer"],
+					ValidAudience = configuration["Jwt:Audience"],
+					IssuerSigningKey = new RsaSecurityKey(rsa)
 				};
 			});
 		}
@@ -83,6 +75,7 @@ namespace IoCConfig
 		public static void AddCustomOptions(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddOptions<JwtOptions>().Bind(configuration.GetSection("Jwt"));
+			services.AddOptions<OAuthOptions>().Bind(configuration.GetSection("OAuth"));
 		}
 
 		public static void AddCustomSwagger(this IServiceCollection services)
@@ -92,39 +85,20 @@ namespace IoCConfig
 			{
 				options.SwaggerDoc("v1", new OpenApiInfo
 				{
-					Title = "JWT Authentication API Document",
+					Title = "Micro IDP API Document",
 					Version = "v1"
 				});
 
 				options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
 				{
-					Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
-                      Enter 'Bearer' [space] and then your token in the text input below.
-                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+					Description = @"JWT Authorization header using the Bearer scheme.",
 					Name = "Authorization",
 					In = ParameterLocation.Header,
 					Type = SecuritySchemeType.ApiKey,
 					Scheme = "Bearer"
 				});
 
-				options.AddSecurityRequirement(new OpenApiSecurityRequirement()
-								{
-										{
-												new OpenApiSecurityScheme
-												{
-														Reference = new OpenApiReference
-														{
-																Type = ReferenceType.SecurityScheme,
-																Id = "Bearer"
-														},
-														Scheme = "oauth2",
-														Name = "Bearer",
-														In = ParameterLocation.Header,
-
-												},
-												new List<string>()
-										}
-								});
+				options.AddSecurityRequirement(new OpenApiSecurityRequirement() { { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }, Scheme = "oauth2", Name = "Bearer", In = ParameterLocation.Header, }, new List<string>() } });
 			});
 		}
 
