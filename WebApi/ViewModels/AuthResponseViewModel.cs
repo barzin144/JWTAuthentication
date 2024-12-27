@@ -1,5 +1,3 @@
-using Domain.Enums;
-
 namespace WebApi.ViewModels;
 
 public class AuthResponseViewModel

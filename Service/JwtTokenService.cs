@@ -155,7 +155,7 @@ namespace Service
 							RequireExpirationTime = true,
 							ValidateIssuer = false,
 							ValidateAudience = false,
-							IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtOptions.PrivateKey)),
+							IssuerSigningKey = new RsaSecurityKey(_rsa),
 							ValidateIssuerSigningKey = true,
 							ValidateLifetime = true,
 							ClockSkew = TimeSpan.Zero
