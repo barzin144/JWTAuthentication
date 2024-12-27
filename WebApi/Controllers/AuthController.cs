@@ -224,23 +224,30 @@ namespace WebApi.Controllers
 				return BadRequest("refreshToken is not set.");
 			}
 
-			(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
-			if (token == null)
+			try
 			{
-				return Unauthorized();
+				(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
+				if (token == null)
+				{
+					return Unauthorized();
+				}
+
+				var result = _jwtTokenService.CreateJwtTokens(user);
+				await _jwtTokenService.AddUserTokenAsync(user, result.RefreshTokenSerial, result.AccessToken, _jwtTokenService.GetRefreshTokenSerial(refreshToken));
+
+				return Ok(new AuthResponseViewModel
+				{
+					AccessToken = result.AccessToken,
+					RefreshToken = result.RefreshToken,
+					Email = user.Email,
+					Name = user.Name,
+					Provider = user.Provider.ToString()
+				});
 			}
-
-			var result = _jwtTokenService.CreateJwtTokens(user);
-			await _jwtTokenService.AddUserTokenAsync(user, result.RefreshTokenSerial, result.AccessToken, _jwtTokenService.GetRefreshTokenSerial(refreshToken));
-
-			return Ok(new AuthResponseViewModel
+			catch
 			{
-				AccessToken = result.AccessToken,
-				RefreshToken = result.RefreshToken,
-				Email = user.Email,
-				Name = user.Name,
-				Provider = user.Provider.ToString()
-			});
+				return BadRequest("Invalid refresh token.");
+			}
 		}
 
 		[HttpPost("logout")]

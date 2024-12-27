@@ -113,11 +113,7 @@ namespace DataAccess
 				string refreshTokenHash = _securityService.GetSha256Hash(refreshToken);
 				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq($"{nameof(User.Tokens)}.{nameof(Token.RefreshTokenIdHash)}", refreshTokenHash);
 
-				User user = await collection.Find(filter).FirstOrDefaultAsync();
-				if (user == null)
-				{
-					throw new Exception("Invalid refresh token");
-				}
+				User user = await collection.Find(filter).FirstOrDefaultAsync() ?? throw new Exception("Invalid refresh token");
 				return (user.Tokens.Where(x => x.RefreshTokenIdHash == refreshTokenHash).FirstOrDefault(), user);
 			}
 			catch
