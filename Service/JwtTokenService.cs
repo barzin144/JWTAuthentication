@@ -205,12 +205,15 @@ namespace Service
 			{
 				throw new Exception("Invalid refresh token");
 			}
-			string refreshTokenSerial = GetRefreshTokenSerial(refreshToken);
-			if (string.IsNullOrWhiteSpace(refreshTokenSerial))
+			try
+			{
+				string refreshTokenSerial = GetRefreshTokenSerial(refreshToken);
+				return await _userService.FindUserAndTokenByRefreshTokenAsync(refreshTokenSerial);
+			}
+			catch
 			{
 				throw new Exception("Invalid refresh token");
 			}
-			return await _userService.FindUserAndTokenByRefreshTokenAsync(refreshTokenSerial);
 		}
 	}
 }
