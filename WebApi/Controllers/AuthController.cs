@@ -54,7 +54,14 @@ namespace WebApi.Controllers
 
 			await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-			return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
+			return Ok(new AuthResponseViewModel
+			{
+				AccessToken = jwtToken.AccessToken,
+				RefreshToken = jwtToken.RefreshToken,
+				Email = user.Email,
+				Name = user.Name,
+				Provider = user.Provider.ToString()
+			});
 		}
 
 		[HttpPost("register")]
@@ -83,7 +90,14 @@ namespace WebApi.Controllers
 
 				await _jwtTokenService.AddUserTokenAsync(newUser, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-				return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
+				return Ok(new AuthResponseViewModel
+				{
+					AccessToken = jwtToken.AccessToken,
+					RefreshToken = jwtToken.RefreshToken,
+					Email = newUser.Email,
+					Name = newUser.Name,
+					Provider = newUser.Provider.ToString()
+				});
 			}
 			else
 			{
@@ -169,7 +183,14 @@ namespace WebApi.Controllers
 
 				await _jwtTokenService.AddUserTokenAsync(newUser, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-				return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
+				return Ok(new AuthResponseViewModel
+				{
+					AccessToken = jwtToken.AccessToken,
+					RefreshToken = jwtToken.RefreshToken,
+					Email = newUser.Email,
+					Name = newUser.Name,
+					Provider = newUser.Provider.ToString()
+				});
 
 			}
 			else
@@ -183,8 +204,14 @@ namespace WebApi.Controllers
 
 				await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-				return Ok(new { accessToken = jwtToken.AccessToken, refreshToken = jwtToken.RefreshToken });
-
+				return Ok(new AuthResponseViewModel
+				{
+					AccessToken = jwtToken.AccessToken,
+					RefreshToken = jwtToken.RefreshToken,
+					Email = user.Email,
+					Name = user.Name,
+					Provider = user.Provider.ToString()
+				});
 			}
 		}
 
@@ -206,7 +233,14 @@ namespace WebApi.Controllers
 			var result = _jwtTokenService.CreateJwtTokens(user);
 			await _jwtTokenService.AddUserTokenAsync(user, result.RefreshTokenSerial, result.AccessToken, _jwtTokenService.GetRefreshTokenSerial(refreshToken));
 
-			return Ok(new { access_token = result.AccessToken, refresh_token = result.RefreshToken });
+			return Ok(new AuthResponseViewModel
+			{
+				AccessToken = result.AccessToken,
+				RefreshToken = result.RefreshToken,
+				Email = user.Email,
+				Name = user.Name,
+				Provider = user.Provider.ToString()
+			});
 		}
 
 		[HttpPost("logout")]

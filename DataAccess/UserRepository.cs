@@ -65,50 +65,6 @@ namespace DataAccess
 			}
 		}
 
-		public async Task<Token> FindTokenByUserIdAndAccessTokenAsync(string userId, string accessTokenHash)
-		{
-			try
-			{
-				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq($"{nameof(User.Tokens)}.{nameof(Token.AccessTokenHash)}", accessTokenHash);
-
-				User user = await collection.Find(filter).FirstOrDefaultAsync();
-
-				return user.Tokens.Where(x => x.AccessTokenHash == accessTokenHash).FirstOrDefault();
-			}
-			catch
-			{
-				throw;
-			}
-		}
-
-		public async Task<bool> UpdateUserLastActivityDateAsync(User user)
-		{
-			try
-			{
-				var currentUtc = DateTimeOffset.UtcNow;
-				if (user.LastLoggedIn != null)
-				{
-					var updateLastActivityDate = TimeSpan.FromMinutes(2);
-					var timeElapsed = currentUtc.Subtract(user.LastLoggedIn.Value);
-					if (timeElapsed < updateLastActivityDate)
-					{
-						return true;
-					}
-				}
-
-				FilterDefinition<User> filter = new FilterDefinitionBuilder<User>().Eq(x => x.Id, user.Id);
-				UpdateDefinition<User> update = new UpdateDefinitionBuilder<User>().Set(x => x.LastLoggedIn, currentUtc);
-
-				await collection.UpdateOneAsync(filter, update);
-				return true;
-			}
-			catch
-			{
-
-				throw;
-			}
-		}
-
 		public async Task<bool> DeleteExpiredTokensAsync(string userId)
 		{
 			try

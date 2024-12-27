@@ -17,7 +17,6 @@ namespace Domain.Entities
 		public required string ProviderKey { get; set; }
 		public required string Name { get; set; }
 		public bool IsActive { get; set; }
-		public DateTimeOffset? LastLoggedIn { get; set; }
 		public required string SerialNumber { get; set; }
 
 		public ICollection<Role> Roles { get; set; }
