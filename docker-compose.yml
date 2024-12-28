@@ -1,6 +1,6 @@
 services:
   webapi:
-    build: .
+    image: barzinassa/microidp:v1.0.0
     ports:
       - 8000:80
       - 8001:443
