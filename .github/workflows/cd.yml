@@ -24,4 +24,6 @@ jobs:
       with:
         context: .
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/microidp:${{ github.event.inputs.image_tag }}
+        tags: |
+          ${{ secrets.DOCKER_USERNAME }}/microidp:latest 
+          ${{ secrets.DOCKER_USERNAME }}/microidp:${{ github.event.inputs.image_tag }}
