@@ -10,7 +10,7 @@ Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).Cre
 services.AddCustomOptions(configuration);
 services.AddCustomServices();
 services.AddCustomAuthentication(configuration);
-services.AddCustomCors();
+services.AddCustomCors(configuration);
 services.AddControllers();
 services.AddCustomSwagger();
 services.AddCustomMongoDbService(configuration);

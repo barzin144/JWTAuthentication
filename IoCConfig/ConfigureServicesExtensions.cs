@@ -19,12 +19,12 @@ namespace IoCConfig
 {
 	public static class ConfigureServicesExtensions
 	{
-		public static void AddCustomCors(this IServiceCollection services)
+		public static void AddCustomCors(this IServiceCollection services, IConfiguration configuration)
 		{
 			services.AddCors(options =>
 			options.AddPolicy("CorsPolicy",
 			builder => builder
-				.WithOrigins("http://localhost:5000")
+				.WithOrigins(configuration["Cors:Origins"])
 				.AllowAnyMethod()
 				.AllowAnyHeader()
 				.SetIsOriginAllowed((host) => true)

@@ -13,6 +13,7 @@ services:
       ASPNETCORE_URLS: "https://+;http://+"
       ASPNETCORE_Kestrel__Certificates__Default__Path: "/https/aspnetcore.pfx"
       ASPNETCORE_Kestrel__Certificates__Default__Password: "1234567890"
+      Cors__Origins: "http://localhost:5000"
     volumes:
       - type: bind
         source: ./aspnetcore.pfx
