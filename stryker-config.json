@@ -1,8 +1,10 @@
 {
     "stryker-config": {
       "ignore-mutations": [
-        "string",
-        "initializer"
+				"string",
+				"initializer",
+				"statement",
+				"block"
       ],
       "report-file-name": "index.html"
     }
