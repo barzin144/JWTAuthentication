@@ -27,7 +27,6 @@ namespace IoCConfig
 				.WithOrigins(configuration["Cors:Origins"])
 				.AllowAnyMethod()
 				.AllowAnyHeader()
-				.SetIsOriginAllowed((host) => true)
 				.AllowCredentials()
 			));
 		}
