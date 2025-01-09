@@ -46,3 +46,5 @@ msbuild.wrn
 aspnetcore.crt
 aspnetcore.key
 aspnetcore.pfx
+**/DataProtectionKeys/
+.env

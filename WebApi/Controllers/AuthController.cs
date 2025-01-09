@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using System.Text.Json;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Models;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using WebApi.ViewModels;
@@ -19,13 +21,17 @@ namespace WebApi.Controllers
 	public class AuthController : ControllerBase
 	{
 		private readonly OAuthOptions _oAuthOptions;
+		private readonly JwtOptions _jwtOptions;
+		private readonly IDataProtector _dataProtector;
 		private readonly IUserService _userService;
 		private readonly ISecurityService _securityService;
 		private readonly IJwtTokenService _jwtTokenService;
 
-		public AuthController(IOptions<OAuthOptions> oAuthOptions, IUserService userService, ISecurityService securityService, IJwtTokenService jwtTokenService)
+		public AuthController(IOptions<OAuthOptions> oAuthOptions, IOptions<JwtOptions> jwtOptions, IDataProtectionProvider dataProtectionProvider, IUserService userService, ISecurityService securityService, IJwtTokenService jwtTokenService)
 		{
 			_oAuthOptions = oAuthOptions.Value;
+			_jwtOptions = jwtOptions.Value;
+			_dataProtector = dataProtectionProvider.CreateProtector(_jwtOptions.DataProtectionPurpose);
 			_userService = userService;
 			_securityService = securityService;
 			_jwtTokenService = jwtTokenService;
@@ -43,25 +49,31 @@ namespace WebApi.Controllers
 
 			if (user == null)
 			{
-				return NotFound();
+				return NotFound("User not found.");
 			}
 			if (user.IsActive == false)
 			{
-				return Unauthorized();
+				return Unauthorized("User account is inactive.");
 			}
 
 			JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
 
 			await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-			return Ok(new AuthResponseViewModel
+			AppendCookie(Response, new AuthCookie
 			{
 				AccessToken = jwtToken.AccessToken,
 				RefreshToken = jwtToken.RefreshToken,
-				Email = user.Email,
-				Name = user.Name,
-				Provider = user.Provider.ToString()
 			});
+
+			return Ok(
+				new
+				{
+					user.Email,
+					user.Name,
+					Provider = user.Provider.ToString()
+				}
+			);
 		}
 
 		[HttpPost("register")]
@@ -90,18 +102,22 @@ namespace WebApi.Controllers
 
 				await _jwtTokenService.AddUserTokenAsync(newUser, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
 
-				return Ok(new AuthResponseViewModel
+				AppendCookie(Response, new AuthCookie
 				{
 					AccessToken = jwtToken.AccessToken,
 					RefreshToken = jwtToken.RefreshToken,
-					Email = newUser.Email,
-					Name = newUser.Name,
+				});
+
+				return Ok(new
+				{
+					newUser.Email,
+					newUser.Name,
 					Provider = newUser.Provider.ToString()
 				});
 			}
 			else
 			{
-				return BadRequest("User with this Email has exist.");
+				return BadRequest("A user with this email already exists.");
 			}
 		}
 
@@ -118,15 +134,15 @@ namespace WebApi.Controllers
 
 			if (user.ProviderKey != _securityService.GetSha256Hash(model.OldPassword))
 			{
-				return BadRequest("Old password is wrong.");
+				return BadRequest("Incorrect old password.");
 			}
 
 			if (await _userService.ChangePassword(user.Id, model.NewPassword))
 			{
-				return Ok(new { message = "password changed successfully." });
+				return Ok(new { message = "Password changed successfully." });
 			}
 
-			return BadRequest("change password failed.");
+			return BadRequest("Failed to change password.");
 
 		}
 
@@ -148,7 +164,7 @@ namespace WebApi.Controllers
 
 			if (!authenticateResult.Succeeded)
 			{
-				return BadRequest("Authentication failed");
+				return BadRequest("Google authentication failed.");
 			}
 
 			var claims = authenticateResult.Principal.Claims;
@@ -164,9 +180,9 @@ namespace WebApi.Controllers
 
 			var user = await _userService.FindUserByLoginAsync(email, Provider.Google, nameIdentifier);
 
-			if (user is null)
+			if (user == null)
 			{
-				User newUser = new User
+				user = new User
 				{
 					Name = name,
 					Email = email,
@@ -176,52 +192,44 @@ namespace WebApi.Controllers
 					Roles = [new Role { Name = "User" }],
 					SerialNumber = _securityService.CreateCryptographicallySecureGuid().ToString().Replace("-", "")
 				};
-
-				await _userService.AddUserAsync(newUser);
-
-				JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(newUser);
-
-				await _jwtTokenService.AddUserTokenAsync(newUser, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
-
-				return Ok(new AuthResponseViewModel
-				{
-					AccessToken = jwtToken.AccessToken,
-					RefreshToken = jwtToken.RefreshToken,
-					Email = newUser.Email,
-					Name = newUser.Name,
-					Provider = newUser.Provider.ToString()
-				});
-
+				await _userService.AddUserAsync(user);
 			}
-			else
+
+			if (user.IsActive == false)
 			{
-				if (user.IsActive == false)
-				{
-					return Unauthorized();
-				}
-
-				JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
-
-				await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
-
-				return Ok(new AuthResponseViewModel
-				{
-					AccessToken = jwtToken.AccessToken,
-					RefreshToken = jwtToken.RefreshToken,
-					Email = user.Email,
-					Name = user.Name,
-					Provider = user.Provider.ToString()
-				});
+				return Unauthorized("User account is inactive.");
 			}
+
+			JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
+
+			await _jwtTokenService.AddUserTokenAsync(user, jwtToken.RefreshTokenSerial, jwtToken.AccessToken, null);
+
+			AppendCookie(Response, new AuthCookie
+			{
+				AccessToken = jwtToken.AccessToken,
+				RefreshToken = jwtToken.RefreshToken,
+			});
+
+			return Ok(new
+			{
+				user.Email,
+				user.Name,
+				Provider = user.Provider.ToString()
+			});
 		}
 
-		[HttpPost("refresh-token")]
-		public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenViewModel model)
+		[HttpGet("refresh-token")]
+		public async Task<IActionResult> RefreshToken()
 		{
-			string refreshToken = model.RefreshToken;
+			AuthCookie authResponse = ReadCookie(Request);
+			if (authResponse == null)
+			{
+				return Unauthorized("No authentication cookie found.");
+			}
+			string refreshToken = authResponse.RefreshToken;
 			if (string.IsNullOrWhiteSpace(refreshToken))
 			{
-				return BadRequest("refreshToken is not set.");
+				return BadRequest("Refresh token is not set.");
 			}
 
 			try
@@ -229,20 +237,19 @@ namespace WebApi.Controllers
 				(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
 				if (token == null)
 				{
-					return Unauthorized();
+					return Unauthorized("Invalid refresh token.");
 				}
 
 				var result = _jwtTokenService.CreateJwtTokens(user);
 				await _jwtTokenService.AddUserTokenAsync(user, result.RefreshTokenSerial, result.AccessToken, _jwtTokenService.GetRefreshTokenSerial(refreshToken));
 
-				return Ok(new AuthResponseViewModel
+				AppendCookie(Response, new AuthCookie
 				{
 					AccessToken = result.AccessToken,
 					RefreshToken = result.RefreshToken,
-					Email = user.Email,
-					Name = user.Name,
-					Provider = user.Provider.ToString()
 				});
+
+				return Ok(new { message = "Token refreshed successfully." });
 			}
 			catch
 			{
@@ -250,20 +257,44 @@ namespace WebApi.Controllers
 			}
 		}
 
-		[HttpPost("logout")]
-		public async Task<IActionResult> Logout([FromBody] RefreshTokenViewModel model)
+		[HttpGet("logout")]
+		public async Task<IActionResult> Logout()
 		{
-			string refreshToken = model.RefreshToken;
+			AuthCookie authResponse = ReadCookie(Request);
+			if (authResponse == null)
+			{
+				return Ok(new { message = "You have logged out successfully." });
+			}
+			string refreshToken = authResponse.RefreshToken;
 			(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
 
-			if (token == null)
+			if (token != null)
 			{
-				return Unauthorized();
+				await _jwtTokenService.RevokeUserBearerTokensAsync(user.Id, refreshToken);
 			}
 
-			await _jwtTokenService.RevokeUserBearerTokensAsync(user.Id, refreshToken);
+			Response.Cookies.Delete(_jwtOptions.CookieName);
+			return Ok(new { message = "You have logged out successfully." });
+		}
 
-			return Ok(new { message = "You logged out successfully." });
+		private void AppendCookie(HttpResponse response, AuthCookie authCookie)
+		{
+			response.Cookies.Append(_jwtOptions.CookieName, _dataProtector.Protect(JsonSerializer.Serialize(authCookie)), new CookieOptions
+			{
+				HttpOnly = true,
+				Secure = true,
+				SameSite = SameSiteMode.Strict,
+				Expires = DateTimeOffset.Now.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes)
+			});
+		}
+
+		private AuthCookie ReadCookie(HttpRequest request)
+		{
+			if (request.Cookies.TryGetValue(_jwtOptions.CookieName, out string cookieValue))
+			{
+				return JsonSerializer.Deserialize<AuthCookie>(_dataProtector.Unprotect(cookieValue));
+			}
+			return null;
 		}
 	}
 }

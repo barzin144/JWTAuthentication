@@ -1,140 +1,161 @@
 # Micro IDP Service
 
-## Features:
+## Features
 
-- Sign up with Email
-- Sign in with Email
-- Sign in with Google
-- Generate JWT
-- Generate Refresh Token
+- Sign up/in with Email
+- Sign up/in with Google
 
-## Usage
+## Run in Docker
 
-- #### Generate Private and Public key
+### Generate certificate to host application with Docker over HTTPS
 
-  - C# Interactive
+#### Windows
 
-    ```C#
-    using System.Security.Cryptography;
-    using (var rsa = RSA.Create(2048))
-    {
-    	// Export the private key
-    	var privateKey = rsa.ExportRSAPrivateKey();
-    	var privateKeyBase64 = Convert.ToBase64String(privateKey);
-    	Console.WriteLine("Private Key:");
-    	Console.WriteLine(privateKeyBase64);
+```shell
+dotnet dev-certs https -ep %USERPROFILE%\.aspnet\https\aspnetapp.pfx -p <CREDENTIAL_PLACEHOLDER>
+dotnet dev-certs https --trust
+```
 
-    	// Export the public key
-    	var publicKey = rsa.ExportRSAPublicKey();
-    	var publicKeyBase64 = Convert.ToBase64String(publicKey);
-    	Console.WriteLine("\nPublic Key:");
-    	Console.WriteLine(publicKeyBase64);
-    }
-    ```
+In the preceding commands, replace `<CREDENTIAL_PLACEHOLDER>` with a password.
 
-  - BASH
+#### Linux
 
-    ```SHELL
-    openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
-    cat private_key.pem | base64
+```shell
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout aspnetcore.key -out aspnetcore.crt -subj "/CN=localhost"
+openssl pkcs12 -export -out aspnetcore.pfx -inkey aspnetcore.key -in aspnetcore.crt
+```
 
-    openssl rsa -pubout -in private_key.pem -out public_key.pem
-    cat public_key.pem | base64
-    ```
+Replace **_ASPNETCORE_Kestrel\_\_Certificates\_\_Default\_\_Password_** with the certificate password in `.env`.
 
-- #### Replace PRIVATE_KEY placeholder in docker-compose.yml with generated private key
+Replace the volume mount source with the generated certificate path in `docker-compose.yml`:
 
-  ```YML
-  webapi:
-    build: .
-    ports:
-      - 8000:80
-      - 8001:443
-    environment:
-      JWT__PrivateKey: "PRIVATE_KEY"
-  ```
-
-- #### Generate certificate to host application with docker over HTTPS
-
-  - windows
-
-    ```SHELL
-    dotnet dev-certs https -ep %USERPROFILE%\.aspnet\https\aspnetapp.pfx -p <CREDENTIAL_PLACEHOLDER>
-    dotnet dev-certs https --trust
-    ```
-
-    In the preceding commands, replace <CREDENTIAL_PLACEHOLDER> with a password.
-
-  - Linux
-
-    ```SHELL
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout aspnetcore.key -out aspnetcore.crt -subj "/CN=localhost"
-    ```
-
-    ```SHELL
-    openssl pkcs12 -export -out aspnetcore.pfx -inkey aspnetcore.key -in aspnetcore.crt
-    ```
-
-  Replace **_ASPNETCORE_Kestrel\_\_Certificates\_\_Default\_\_Password_** with certificate password in docker-compose.yml
-
-  Replace volume mount source with generated certificate path in docker-compose.yml
-
-  ```YML
-  volumes:
+```yml
+volumes:
   - type: bind
     source: ./aspnetcore.pfx
     target: /https/aspnetcore.pfx
-  ```
+```
 
-- #### Sing in with Google configuration
+To share data protection keys for encrypting and decrypting cookies, create an empty folder and bind it into the Docker container:
 
-  - Create OAuth2.0 client in [Google Cloud Console](https://console.cloud.google.com).
-  - Replace **_OAuth_GoogleClientId_** placeholder in docker-compose.yml
-  - Replace **_OAuth_GoogleClientSecret_** placeholder in docker-compose.yml
-  - Replace **_OAuth_GoogleCallBackURL_** placeholder in docker-compose.yml with your client app google callback page (this page should call https://IDP_SERVER_URL/api/auth/google-callback to get JWT)
+```yml
+volumes:
+  - type: bind
+    source: ./DataProtectionKeys
+    target: /app/DataProtectionKeys
+```
 
-- #### Run IDP
+### Generate Private and Public Key
 
-  ```SHELL
-  docker compose up --wait
-  ```
+#### C# Interactive
 
-### Client App
+```csharp
+using System.Security.Cryptography;
+using (var rsa = RSA.Create(2048))
+{
+    // Export the private key
+    var privateKey = rsa.ExportRSAPrivateKey();
+    var privateKeyBase64 = Convert.ToBase64String(privateKey);
+    Console.WriteLine("Private Key:");
+    Console.WriteLine(privateKeyBase64);
 
-- #### Add Jwt section to you appsettings.json
+    // Export the public key
+    var publicKey = rsa.ExportRSAPublicKey();
+    var publicKeyBase64 = Convert.ToBase64String(publicKey);
+    Console.WriteLine("\nPublic Key:");
+    Console.WriteLine(publicKeyBase64);
+}
+```
 
-  ```JSON
-  "Jwt": {
-  	"PublicKey": "PUBLIC_KEY",
-  	"Issuer": "https://localhost:8001",
-  	"Audience": "http://localhost:5010"
-  }
-  ```
+#### Bash
 
-  Replace PUBLIC_KEY placeholder with generated public key
+```shell
+openssl genpkey -algorithm RSA -out private_key.pem -pkeyopt rsa_keygen_bits:2048
+cat private_key.pem | base64
 
-- #### Install JwtBearer package
-  ```SHELL
-  dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
-  ```
-- #### Add Authentication middleware
+openssl rsa -pubout -in private_key.pem -out public_key.pem
+cat public_key.pem | base64
+```
 
-  ```C#
-  var rsa = RSA.Create();
-  rsa.ImportRSAPublicKey(Convert.FromBase64String(configuration["Jwt:PublicKey"] ?? ""), out _);
+Replace the `PRIVATE_KEY` placeholder in `.env` with the generated private key.
 
-  services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-  .AddJwtBearer(options =>
-  {
-  	options.TokenValidationParameters = new TokenValidationParameters
-  	{
-  		ValidateIssuer = true,
-  		ValidateAudience = true,
-  		ValidateLifetime = true,
-  		ValidateIssuerSigningKey = true,
-  		ValidIssuer = configuration["Jwt:Issuer"],
-  		ValidAudience = configuration["Jwt:Audience"],
-  		IssuerSigningKey = new RsaSecurityKey(rsa)
-  	};
-  });
-  ```
+### Sign in with Google Configuration
+
+1. Create an OAuth 2.0 client in [Google Cloud Console](https://console.cloud.google.com).
+2. Replace **_OAuth\_\_GoogleClientId_** placeholder in `.env`.
+3. Replace **_OAuth\_\_GoogleClientSecret_** placeholder in `.env`.
+4. Replace **_OAuth\_\_GoogleCallBackURL_** placeholder in `.env` with your client app's Google callback page (this page should call `https://IDP_SERVER_URL/api/auth/google-callback` to get JWT).
+
+### Run IDP
+
+```shell
+docker compose up --wait
+```
+
+## Client App
+
+### Add Jwt Section to Your `appsettings.json`
+
+```json
+"Jwt": {
+    "PublicKey": "PUBLIC_KEY",
+    "Issuer": "https://localhost:8001",
+    "Audience": "http://localhost:5010",
+    "CookieName": "SAME AS IDP .env Jwt__CookieName",
+    "DataProtectionPurpose": "SAME AS IDP .env Jwt__DataProtectionPurpose"
+}
+```
+
+Replace the `PUBLIC_KEY` placeholder with the generated public key.
+
+### Install JwtBearer Package
+
+```shell
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+```
+
+### Add Authentication Middleware
+
+```csharp
+var rsa = RSA.Create();
+rsa.ImportRSAPublicKey(Convert.FromBase64String(configuration["Jwt:PublicKey"] ?? ""), out _);
+
+services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = configuration["Jwt:Issuer"],
+            ValidAudience = configuration["Jwt:Audience"],
+            IssuerSigningKey = new RsaSecurityKey(rsa)
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue(configuration["Jwt:CookieName"], out var encryptedToken))
+                {
+                    var dataProtector = context.HttpContext.RequestServices
+                        .GetRequiredService<IDataProtectionProvider>()
+                        .CreateProtector(configuration["Jwt:DataProtectionPurpose"]);
+
+                    try
+                    {
+                        var authCookie = JsonSerializer.Deserialize<AuthCookie>(dataProtector.Unprotect(encryptedToken));
+                        context.Token = authCookie.AccessToken;
+                    }
+                    catch
+                    {
+                        context.Fail("Invalid or tampered token");
+                    }
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+    });
+```

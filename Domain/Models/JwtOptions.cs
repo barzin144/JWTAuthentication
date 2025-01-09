@@ -9,5 +9,10 @@
 		public int RefreshTokenExpirationMinutes { set; get; }
 		public bool AllowMultipleLoginsFromTheSameUser { set; get; }
 		public bool AllowSignoutAllUserActiveClients { set; get; }
+		public string DataProtectionApplicationName { get; set; }
+		public string DataProtectionKeysPath { get; set; }
+		public string DataProtectionPurpose { get; set; }
+		public string CookieName { get; set; }
+
 	}
 }
