@@ -4,7 +4,6 @@ using Domain.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
-using System.Collections.Generic;
 using DataAccess;
 using MongoDB.Driver;
 using Domain.Repositories;
@@ -14,6 +13,10 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Cryptography;
 using System;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
+using System.IO;
+using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace IoCConfig
 {
@@ -59,9 +62,40 @@ namespace IoCConfig
 					ValidAudience = configuration["Jwt:Audience"],
 					IssuerSigningKey = new RsaSecurityKey(rsa)
 				};
+
+				options.Events = new JwtBearerEvents
+				{
+					OnMessageReceived = context =>
+					{
+						if (context.Request.Cookies.TryGetValue(configuration["Jwt:CookieName"], out var encryptedToken))
+						{
+							var dataProtector = context.HttpContext.RequestServices
+									.GetRequiredService<IDataProtectionProvider>()
+									.CreateProtector(configuration["Jwt:DataProtectionPurpose"]);
+
+							try
+							{
+								var authCookie = JsonSerializer.Deserialize<AuthCookie>(dataProtector.Unprotect(encryptedToken));
+								context.Token = authCookie.AccessToken;
+							}
+							catch
+							{
+								context.Fail("Invalid or tampered token");
+							}
+						}
+
+						return Task.CompletedTask;
+					}
+				};
 			});
 		}
 
+		public static void AddCustomDataProtection(this IServiceCollection services, IConfiguration configuration)
+		{
+			services.AddDataProtection()
+			.PersistKeysToFileSystem(new DirectoryInfo(configuration["Jwt:DataProtectionKeysPath"]))
+			.SetApplicationName(configuration["Jwt:DataProtectionApplicationName"]);
+		}
 		public static void AddCustomServices(this IServiceCollection services)
 		{
 			services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -87,17 +121,6 @@ namespace IoCConfig
 					Title = "Micro IDP API Document",
 					Version = "v1"
 				});
-
-				options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-				{
-					Description = @"JWT Authorization header using the Bearer scheme.",
-					Name = "Authorization",
-					In = ParameterLocation.Header,
-					Type = SecuritySchemeType.ApiKey,
-					Scheme = "Bearer"
-				});
-
-				options.AddSecurityRequirement(new OpenApiSecurityRequirement() { { new OpenApiSecurityScheme { Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }, Scheme = "oauth2", Name = "Bearer", In = ParameterLocation.Header, }, new List<string>() } });
 			});
 		}
 

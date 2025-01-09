@@ -1,5 +1,4 @@
 using IoCConfig;
-using Microsoft.AspNetCore.DataProtection;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,9 +8,7 @@ var configuration = builder.Configuration;
 Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(configuration).CreateLogger();
 
 services.AddCustomOptions(configuration);
-services.AddDataProtection()
-.PersistKeysToFileSystem(new DirectoryInfo(configuration["Jwt:DataProtectionKeysPath"]))
-.SetApplicationName(configuration["Jwt:DataProtectionApplicationName"]);
+services.AddCustomDataProtection(configuration);
 services.AddCustomServices();
 services.AddCustomAuthentication(configuration);
 services.AddCustomCors(configuration);

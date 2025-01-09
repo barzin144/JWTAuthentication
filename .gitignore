@@ -47,3 +47,4 @@ aspnetcore.crt
 aspnetcore.key
 aspnetcore.pfx
 **/DataProtectionKeys/
+.env
