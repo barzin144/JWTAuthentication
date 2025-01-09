@@ -101,6 +101,8 @@ docker compose up --wait
     "PublicKey": "PUBLIC_KEY",
     "Issuer": "https://localhost:8001",
     "Audience": "http://localhost:5010",
+    "DataProtectionApplicationName": "microidp",
+    "DataProtectionKeysPath": "./DataProtectionKeys",
     "CookieName": "SAME AS IDP .env Jwt__CookieName",
     "DataProtectionPurpose": "SAME AS IDP .env Jwt__DataProtectionPurpose"
 }
@@ -117,6 +119,11 @@ dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
 ### Add Authentication Middleware
 
 ```csharp
+
+services.AddDataProtection()
+	.PersistKeysToFileSystem(new DirectoryInfo(configuration["Jwt:DataProtectionKeysPath"] ?? ""))
+	.SetApplicationName(configuration["Jwt:DataProtectionApplicationName"] ?? "");
+
 var rsa = RSA.Create();
 rsa.ImportRSAPublicKey(Convert.FromBase64String(configuration["Jwt:PublicKey"] ?? ""), out _);
 
