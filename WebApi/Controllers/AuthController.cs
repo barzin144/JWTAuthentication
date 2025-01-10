@@ -224,7 +224,7 @@ namespace WebApi.Controllers
 			AuthCookie authResponse = ReadCookie(Request);
 			if (authResponse == null)
 			{
-				return Unauthorized("No authentication cookie found.");
+				return BadRequest("No authentication cookie found.");
 			}
 			string refreshToken = authResponse.RefreshToken;
 			if (string.IsNullOrWhiteSpace(refreshToken))
@@ -237,7 +237,7 @@ namespace WebApi.Controllers
 				(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
 				if (token == null)
 				{
-					return Unauthorized("Invalid refresh token.");
+					return BadRequest("Invalid refresh token.");
 				}
 
 				var result = _jwtTokenService.CreateJwtTokens(user);
