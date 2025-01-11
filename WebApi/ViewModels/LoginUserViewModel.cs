@@ -5,10 +5,10 @@ namespace WebApi.ViewModels
 	public class LoginUserViewModel
 	{
 		[Required]
-		public string Email { get; set; }
+		public required string Email { get; set; }
 
 		[Required]
-		[MinLength(6)]
-		public string Password { get; set; }
+		[MinLength((8), ErrorMessage = "Password must be at least 8 characters long")]
+		public required string Password { get; set; }
 	}
 }
