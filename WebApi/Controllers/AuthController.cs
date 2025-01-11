@@ -38,22 +38,27 @@ namespace WebApi.Controllers
 		}
 
 		[HttpPost("login")]
-		public async Task<IActionResult> Login(LoginUserViewModel loginUser)
+		public async Task<ActionResult<ApiResponseViewModel<AuthResponseViewModel>>> Login(LoginUserViewModel loginUser)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
-
 			User user = await _userService.FindUserByLoginAsync(loginUser.Email, Provider.Password, loginUser.Password);
 
 			if (user == null)
 			{
-				return NotFound("User not found.");
+				return NotFound(
+					new ApiResponseViewModel
+					{
+						Success = false,
+						Message = "User not found."
+					});
 			}
 			if (user.IsActive == false)
 			{
-				return Unauthorized("User account is inactive.");
+				return Unauthorized(
+					new ApiResponseViewModel
+					{
+						Success = false,
+						Message = "User account is inactive."
+					});
 			}
 
 			JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
@@ -67,22 +72,21 @@ namespace WebApi.Controllers
 			});
 
 			return Ok(
-				new
+				new ApiResponseViewModel<AuthResponseViewModel>
 				{
-					user.Email,
-					user.Name,
-					Provider = user.Provider.ToString()
-				}
-			);
+					Success = true,
+					Data = new AuthResponseViewModel
+					{
+						Email = user.Email,
+						Name = user.Name,
+						Provider = user.Provider.ToString()
+					}
+				});
 		}
 
 		[HttpPost("register")]
-		public async Task<IActionResult> Register(RegisterUserViewModel registerUser)
+		public async Task<ActionResult<ApiResponseViewModel<AuthResponseViewModel>>> Register(RegisterUserViewModel registerUser)
 		{
-			if (!ModelState.IsValid)
-			{
-				return BadRequest(ModelState);
-			}
 			if (await _userService.FindUserByEmailAsync(registerUser.Email) == null)
 			{
 				User newUser = new User
@@ -108,22 +112,28 @@ namespace WebApi.Controllers
 					RefreshToken = jwtToken.RefreshToken,
 				});
 
-				return Ok(new
-				{
-					newUser.Email,
-					newUser.Name,
-					Provider = newUser.Provider.ToString()
-				});
+				return Ok(
+					new ApiResponseViewModel<AuthResponseViewModel>
+					{
+						Success = true,
+						Data = new AuthResponseViewModel
+						{
+							Email = newUser.Email,
+							Name = newUser.Name,
+							Provider = newUser.Provider.ToString()
+						}
+					}
+				);
 			}
 			else
 			{
-				return BadRequest("A user with this email already exists.");
+				return BadRequest(new ApiResponseViewModel { Success = false, Message = "A user with this email already exists." });
 			}
 		}
 
 		[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 		[HttpPost("change-password")]
-		public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
+		public async Task<ActionResult<ApiResponseViewModel>> ChangePassword(ChangePasswordViewModel model)
 		{
 			if (!ModelState.IsValid)
 			{
@@ -134,16 +144,28 @@ namespace WebApi.Controllers
 
 			if (user.ProviderKey != _securityService.GetSha256Hash(model.OldPassword))
 			{
-				return BadRequest("Incorrect old password.");
+				return BadRequest(new ApiResponseViewModel
+				{
+					Success = false,
+					Message = "Incorrect old password."
+				});
 			}
 
 			if (await _userService.ChangePassword(user.Id, model.NewPassword))
 			{
-				return Ok(new { message = "Password changed successfully." });
+				return Ok(new ApiResponseViewModel
+				{
+					Success = true,
+					Message = "Password changed successfully."
+				});
 			}
 
-			return BadRequest("Failed to change password.");
-
+			return BadRequest(
+				new ApiResponseViewModel
+				{
+					Success = false,
+					Message = "Failed to change password."
+				});
 		}
 
 
@@ -158,13 +180,18 @@ namespace WebApi.Controllers
 		}
 
 		[HttpGet("google-callback")]
-		public async Task<IActionResult> GoogleCallbackAsync()
+		public async Task<ActionResult<ApiResponseViewModel<AuthResponseViewModel>>> GoogleCallbackAsync()
 		{
 			var authenticateResult = await HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
 			if (!authenticateResult.Succeeded)
 			{
-				return BadRequest("Google authentication failed.");
+				return BadRequest(new ApiResponseViewModel
+				{
+					Success = false,
+					Message =
+				 "Google authentication failed."
+				});
 			}
 
 			var claims = authenticateResult.Principal.Claims;
@@ -197,7 +224,7 @@ namespace WebApi.Controllers
 
 			if (user.IsActive == false)
 			{
-				return Unauthorized("User account is inactive.");
+				return Unauthorized(new ApiResponseViewModel { Success = false, Message = "User account is inactive." });
 			}
 
 			JwtTokensData jwtToken = _jwtTokenService.CreateJwtTokens(user);
@@ -210,26 +237,31 @@ namespace WebApi.Controllers
 				RefreshToken = jwtToken.RefreshToken,
 			});
 
-			return Ok(new
-			{
-				user.Email,
-				user.Name,
-				Provider = user.Provider.ToString()
-			});
+			return Ok(
+				new ApiResponseViewModel<AuthResponseViewModel>
+				{
+					Success = true,
+					Data = new AuthResponseViewModel
+					{
+						Email = user.Email,
+						Name = user.Name,
+						Provider = user.Provider.ToString()
+					}
+				});
 		}
 
 		[HttpGet("refresh-token")]
-		public async Task<IActionResult> RefreshToken()
+		public async Task<ActionResult<ApiResponseViewModel<AuthResponseViewModel>>> RefreshToken()
 		{
-			AuthCookie authResponse = ReadCookie(Request);
+			AuthCookie? authResponse = ReadCookie(Request);
 			if (authResponse == null)
 			{
-				return Unauthorized("No authentication cookie found.");
+				return BadRequest(new ApiResponseViewModel { Success = false, Message = "No authentication cookie found." });
 			}
 			string refreshToken = authResponse.RefreshToken;
 			if (string.IsNullOrWhiteSpace(refreshToken))
 			{
-				return BadRequest("Refresh token is not set.");
+				return BadRequest(new ApiResponseViewModel { Success = false, Message = "Refresh token is not set." });
 			}
 
 			try
@@ -237,7 +269,7 @@ namespace WebApi.Controllers
 				(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
 				if (token == null)
 				{
-					return Unauthorized("Invalid refresh token.");
+					return BadRequest(new ApiResponseViewModel { Success = false, Message = "Invalid refresh token." });
 				}
 
 				var result = _jwtTokenService.CreateJwtTokens(user);
@@ -249,21 +281,31 @@ namespace WebApi.Controllers
 					RefreshToken = result.RefreshToken,
 				});
 
-				return Ok(new { message = "Token refreshed successfully." });
+				return Ok(
+				new ApiResponseViewModel<AuthResponseViewModel>
+				{
+					Success = true,
+					Data = new AuthResponseViewModel
+					{
+						Email = user.Email,
+						Name = user.Name,
+						Provider = user.Provider.ToString()
+					}
+				});
 			}
 			catch
 			{
-				return BadRequest("Invalid refresh token.");
+				return BadRequest(new ApiResponseViewModel { Success = false, Message = "Invalid refresh token." });
 			}
 		}
 
 		[HttpGet("logout")]
-		public async Task<IActionResult> Logout()
+		public async Task<ActionResult<ApiResponseViewModel>> Logout()
 		{
-			AuthCookie authResponse = ReadCookie(Request);
+			AuthCookie? authResponse = ReadCookie(Request);
 			if (authResponse == null)
 			{
-				return Ok(new { message = "You have logged out successfully." });
+				return Ok(new ApiResponseViewModel { Success = true, Message = "You have logged out successfully." });
 			}
 			string refreshToken = authResponse.RefreshToken;
 			(Token token, User user) = await _jwtTokenService.FindUserAndTokenByRefreshTokenAsync(refreshToken);
@@ -274,7 +316,7 @@ namespace WebApi.Controllers
 			}
 
 			Response.Cookies.Delete(_jwtOptions.CookieName);
-			return Ok(new { message = "You have logged out successfully." });
+			return Ok(new ApiResponseViewModel { Success = true, Message = "You have logged out successfully." });
 		}
 
 		private void AppendCookie(HttpResponse response, AuthCookie authCookie)
@@ -288,11 +330,11 @@ namespace WebApi.Controllers
 			});
 		}
 
-		private AuthCookie ReadCookie(HttpRequest request)
+		private AuthCookie? ReadCookie(HttpRequest request)
 		{
-			if (request.Cookies.TryGetValue(_jwtOptions.CookieName, out string cookieValue))
+			if (request.Cookies.TryGetValue(_jwtOptions.CookieName, out string? cookieValue))
 			{
-				return JsonSerializer.Deserialize<AuthCookie>(_dataProtector.Unprotect(cookieValue));
+				return JsonSerializer.Deserialize<AuthCookie>(_dataProtector.Unprotect(cookieValue)) ?? null;
 			}
 			return null;
 		}

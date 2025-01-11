@@ -5,14 +5,16 @@ namespace WebApi.ViewModels
 	public class ChangePasswordViewModel
 	{
 		[Required]
-		public string OldPassword { get; set; }
+		[MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
+		public required string OldPassword { get; set; }
 
 		[Required]
-		[MinLength(6)]
-		public string NewPassword { get; set; }
+		[MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
+		public required string NewPassword { get; set; }
 
 		[Required]
+		[MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
 		[Compare(nameof(NewPassword))]
-		public string ConfirmNewPassword { get; set; }
+		public required string ConfirmNewPassword { get; set; }
 	}
 }
